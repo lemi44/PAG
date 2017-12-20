@@ -4,6 +4,7 @@
 #include <glm/detail/type_vec2.hpp>
 #include "Shader.h"
 #include "Texture.h"
+#include "Material.h"
 
 using namespace std;
 
@@ -27,10 +28,10 @@ public:
 	/*  Mesh Data  */
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
-	vector<Texture> textures;
+	Material material;
 	bool outline;
 	/*  Functions  */
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, Material material);
 	void draw(Shader* shader);
 	void drawColor(Shader* shader, GLuint id) const;
 

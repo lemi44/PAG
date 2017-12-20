@@ -2,11 +2,16 @@
 #include "Shader.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
+#include <sstream>
 #include <GLFW/glfw3.h>
 #include "Window.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "GUI.h"
+#include "Logger.h"
+#include "BaseLight.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
 
 Core* Core::ref_ = nullptr;
 
@@ -42,17 +47,16 @@ int Core::init(int const width, int const height)
 	/* Initialize GLEW */
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
 	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
+		Logger::logError("Failed to initialize GLAD");
 		return -1;
 	}
 	ImGui_ImplGlfwGL3_Init(win.get(), true);
 	Shader sha;
 	Shader line_sha("Shaders/line.vert", "Shaders/line.frag");
 	/* Apply shader */
-	glUseProgram(sha.get());
-	//glUniform1i(glGetUniformLocation(sha.get(), "diffuse"), 0);
-	allModels_.push_back(Model("Assets/treeplan1.fbx"));
-	allModels_.push_back(Model("Assets/hierarchy.fbx"));
+	sha.use();
+	const auto tree_id = models_.addModel(Model("Assets/treeplan1.fbx"));
+	const auto pion_id = models_.addModel(Model("Assets/hierarchy.fbx"));
 
 	glfwSetInputMode(win.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -75,19 +79,27 @@ int Core::init(int const width, int const height)
 	root_.setShader(&sha);
 	root_.setLineShader(&line_sha);
 
-	GraphNode tree(&allModels_[0]);
-	GraphNode pion(&allModels_[1]);
+	GraphNode tree(models_.getModel(tree_id));
+	GraphNode pion(models_.getModel(pion_id));
 
 	tree.setTransform(tree.getTransform().rotate(glm::vec3(glm::radians(-90.f), 0.f, 0.f)).scale(glm::vec3(.1f)));
 	pion.setTransform(pion.getTransform().translate(glm::vec3(40.0f, -20.0f, 0.0f)));
 	root_.addChild(&tree);
 	root_.addChild(&pion);
-	mainloop(win.get());
+	DirectionalLight dir_light(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.05f), glm::vec3(0.4f), glm::vec3(0.5f));
+	PointLight point_light(glm::vec3(0.05f), glm::vec3(0.8f), glm::vec3(1.0f), glm::vec3(3.0f, 2.0f, 3.0f), 1.0f, 0.9f, 0.032f);
+	SpotLight spot_light(glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-3.0f, 2.0f, -3.0f), glm::normalize(glm::vec3(-3.0f, 2.0f, -3.0f) - glm::vec3(0.0f)), glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f)), 1.0f, 0.9f, 0.032f);
+
+	dir_light.setupShader(&sha);
+	point_light.setupShader(&sha);
+	spot_light.setupShader(&sha);
+
+	mainloop(win.get(), &sha);
 
 	return 0;
 }
 
-void Core::mainloop(GLFWwindow* window)
+void Core::mainloop(GLFWwindow* window, Shader* shader)
 {
 	oldTime_ = 0.0f;
 	newTime_ = 0.0f;
@@ -125,7 +137,7 @@ void Core::mainloop(GLFWwindow* window)
 				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			}
 
-			GUI::ShowPropertyEditor(&showGui_, allModels_);
+			GUI::ShowPropertyEditor(&showGui_, models_.getAllModels());
 		}
 		//if imgui glfwSetScrollCallback(window, ImGui_ImplGlfwGL3_ScrollCallback);
 
@@ -136,7 +148,7 @@ void Core::mainloop(GLFWwindow* window)
 		/* Update game here */
 		update(window);
 		/* Render here */
-		render(gameTime_, window);
+		render(gameTime_, window, shader);
 		/* Swap front and back buffers */
 		if (!drawColor_)
 			glfwSwapBuffers(window);
@@ -269,49 +281,48 @@ void Core::update(GLFWwindow* window)
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 		int width, height;
 		glfwGetWindowSize(window, &width, &height);
-		
 
-		std::vector<GLubyte> data = {0xFF, 0xFF, 0xFF, 0x0};
-		//std::cout << "Trying to read pixel for color-picking at (" << mouseX << "," << height - int(mouseY) << ")" << std::endl;
+
+		std::vector<GLubyte> data = { 0xFF, 0xFF, 0xFF, 0x0 };
+		Logger::logDebug(string_format("Reading pixel for color-picking at (%d,%d)", int(mouseX), height - int(mouseY)));
 		glReadPixels(int(mouseX), height - int(mouseY), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
 		bool error = false;
 		GLenum err;
 		while ((err = glGetError()) != GL_NO_ERROR)
 		{
-			std::cout << "Got error while trying to read pixel for color-picking at (" << mouseX << "," << height - int(mouseY) << "): ";
-			switch(err)
+			std::ostringstream sstr;
+			sstr << "Got error while trying to read pixel for color-picking at (" << mouseX << "," << height - int(mouseY) << "): ";
+			switch (err)
 			{
 			case GL_INVALID_ENUM:
-				std::cout << "GL_INVALID_ENUM";
+				sstr << "GL_INVALID_ENUM";
 				break;
 			default:
-				std::cout << err;
+				sstr << err;
 			}
-			std::cout << std::endl;
+			Logger::logError(sstr.str());
 			error = true;
 		}
 		if (!error)
 		{
-			int pickedID =
-				data[0];
-			if (pickedID == 0x00ffffff || pickedID == 0) { // Full white, must be the background !
-				std::cout << "Picked BG!" << std::endl;
+			const auto picked_id =
+				data[0] +
+				data[1] * 256 +
+				data[2] * 256 * 256;
+			if (picked_id == 0x00ffffff || picked_id == 0) { // Full white, must be the background !
+				Logger::logDebug("Picked BG!");
 				if (selectedModel_ != nullptr)
 					for (auto &m : selectedModel_->getMeshes())
 						m.outline = false;
 				selectedModel_ = nullptr;
 			}
 			else {
-				std::cout << "Picked id=" << pickedID << ",r=" << int(data[3]) << ",g=" << int(data[2]) << ",b=" << int(data[1]) << ",a=" << int(data[0]) << std::endl;
-				for (auto &m : allModels_)
+				Logger::logDebug(string_format("Picked id=%d,a=%d,b=%d,g=%d,r=%d", picked_id, int(data[3]), int(data[2]), int(data[1]), int(data[0])));
+				selectedModel_ = models_.getModel(picked_id);
+				if (selectedModel_ != nullptr)
 				{
-					selectedModel_ = findModelByID(pickedID, &m);
-					if (selectedModel_ != nullptr)
-					{
-						for (auto &mes : selectedModel_->getMeshes())
-							mes.outline = true;
-						break;
-					}
+					for (auto &mes : selectedModel_->getMeshes())
+						mes.outline = true;
 				}
 			}
 		}
@@ -321,20 +332,17 @@ void Core::update(GLFWwindow* window)
 
 }
 
-void Core::render(float tpf, GLFWwindow* window)
+void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
 	/* Clear the color buffer & depth buffer*/
-	if (drawColor_)
-		glClearColor(0.f, 0.f, 0.f, 0.f);
-	else
-		glClearColor(1.f, 1.f, 1.f, 1.f);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	auto const wvp_changed = cam_.getCameraChanged();
 	if (wvp_changed)
 		wvp_.setMatrix(cam_.getWVPMatrix(window));
-
-	root_.render(wvp_, wvp_changed, drawColor_);
+	shader->setVec3("viewPos", cam_.getCameraPos());
+	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_);
 	if (showGui_)
 		ImGui::Render();
 }
@@ -378,19 +386,6 @@ void Core::mouseCallback(GLFWwindow * window, double const xpos, double const yp
 		ref_->firstMouse_ = true;
 }
 
-Model* Core::findModelByID(int i, Model* mdl)
-{
-	for (auto &m : mdl->getChildren())
-	{
-		Model* ret = findModelByID(i, &m);
-		if (ret != nullptr)
-			return ret;
-		if (m.getID() == i)
-			return &m;
-	}
-	return nullptr;
-}
-
 Core::~Core()
 {
 	ImGui_ImplGlfwGL3_Shutdown();
@@ -405,308 +400,4 @@ void Core::scrollCallback(GLFWwindow* window, double const xoffset, double const
 		ref_->cam_.setFoV(glm::radians(1.0f));
 	if (ref_->cam_.getFoV() >= glm::radians(45.0f))
 		ref_->cam_.setFoV(glm::radians(45.0f));
-}
-
-void Core::screenPosToWorldRay(
-	const int mouse_x, const int mouse_y,             // Mouse position, in pixels, from bottom-left corner of the window
-	const int screen_width, const int screen_height,  // Window size, in pixels
-	const glm::mat4 view_matrix,               // Camera position and orientation
-	const glm::mat4 projection_matrix,         // Camera parameters (ratio, field of view, near and far planes)
-	glm::vec3& out_origin,              // Ouput : Origin of the ray. /!\ Starts at the near plane, so if you want the ray to start at the camera's position instead, ignore this.
-	glm::vec3& out_direction            // Ouput : Direction, in world space, of the ray that goes "through" the mouse.
-) const
-{
-	// The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
-	const glm::vec4 l_ray_start_ndc(
-		(float(mouse_x) / float(screen_width) - 0.5f) * 2.0f, // [0,1024] -> [-1,1]
-		(float(mouse_y) / float(screen_height) - 0.5f) * 2.0f, // [0, 768] -> [-1,1]
-		-1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
-		1.0f
-	);
-	const glm::vec4 l_ray_end_ndc(
-		(float(mouse_x) / float(screen_width) - 0.5f) * 2.0f,
-		(float(mouse_y) / float(screen_height) - 0.5f) * 2.0f,
-		0.0,
-		1.0f
-	);
-
-	// The Projection matrix goes from Camera Space to NDC.
-	// So inverse(ProjectionMatrix) goes from NDC to Camera Space.
-	const auto inverse_projection_matrix = glm::inverse(projection_matrix);
-
-	// The View Matrix goes from World Space to Camera Space.
-	// So inverse(ViewMatrix) goes from Camera Space to World Space.
-	const auto inverse_view_matrix = glm::inverse(view_matrix);
-
-	auto l_ray_start_camera = inverse_projection_matrix * l_ray_start_ndc;    l_ray_start_camera /= l_ray_start_camera.w;
-	auto l_ray_start_world = inverse_view_matrix       * l_ray_start_camera; l_ray_start_world /= l_ray_start_world.w;
-	auto l_ray_end_camera = inverse_projection_matrix * l_ray_end_ndc;      l_ray_end_camera /= l_ray_end_camera.w;
-	auto l_ray_end_world = inverse_view_matrix       * l_ray_end_camera;   l_ray_end_world /= l_ray_end_world.w;
-
-	// Faster way (just one inverse)
-	//glm::mat4 M = glm::inverse(ProjectionMatrix * ViewMatrix);
-	//glm::vec4 lRayStart_world = M * lRayStart_NDC; lRayStart_world/=lRayStart_world.w;
-	//glm::vec4 lRayEnd_world   = M * lRayEnd_NDC  ; lRayEnd_world  /=lRayEnd_world.w;
-
-	glm::vec3 l_ray_dir_world(l_ray_end_world - l_ray_start_world);
-	l_ray_dir_world = glm::normalize(l_ray_dir_world);
-
-	out_origin = glm::vec3(l_ray_start_world);
-	out_direction = glm::normalize(l_ray_dir_world);
-}
-
-
-bool Core::testRayObbIntersection(
-	const glm::vec3 ray_origin,        // Ray origin, in world space
-	const glm::vec3 ray_direction,     // Ray direction (NOT target position!), in world space. Must be normalize()'d.
-	const glm::vec3 aabb_min,          // Minimum X,Y,Z coords of the mesh when not transformed at all.
-	const glm::vec3 aabb_max,          // Maximum X,Y,Z coords. Often aabb_min*-1 if your mesh is centered, but it's not always the case.
-	glm::mat4 model_matrix,       // Transformation applied to the mesh (which will thus be also applied to its bounding box)
-	float& intersection_distance // Output : distance between ray_origin and the intersection with the OBB
-) const
-{
-
-	// Intersection method from Real-Time Rendering and Essential Mathematics for Games
-
-	auto t_min = -100000.0f;
-	auto t_max = 100000.0f;
-
-	const glm::vec3 ob_bposition_worldspace(model_matrix[3].x, model_matrix[3].y, model_matrix[3].z);
-
-	const auto delta = ob_bposition_worldspace - ray_origin;
-
-	// Test intersection with the 2 planes perpendicular to the OBB's X axis
-	{
-		const glm::vec3 xaxis(model_matrix[0].x, model_matrix[0].y, model_matrix[0].z);
-		const auto e = glm::dot(xaxis, delta);
-		const auto f = glm::dot(ray_direction, xaxis);
-
-		if (fabs(f) > 0.001f) { // Standard case
-
-			auto t1 = (e + aabb_min.x) / f; // Intersection with the "left" plane
-			auto t2 = (e + aabb_max.x) / f; // Intersection with the "right" plane
-											 // t1 and t2 now contain distances betwen ray origin and ray-plane intersections
-
-											 // We want t1 to represent the nearest intersection, 
-											 // so if it's not the case, invert t1 and t2
-			if (t1 > t2) {
-				const auto w = t1; t1 = t2; t2 = w; // swap t1 and t2
-			}
-
-			// tMax is the nearest "far" intersection (amongst the X,Y and Z planes pairs)
-			if (t2 < t_max)
-				t_max = t2;
-			// tMin is the farthest "near" intersection (amongst the X,Y and Z planes pairs)
-			if (t1 > t_min)
-				t_min = t1;
-
-			// And here's the trick :
-			// If "far" is closer than "near", then there is NO intersection.
-			// See the images in the tutorials for the visual explanation.
-			if (t_max < t_min)
-				return false;
-
-		}
-		else { // Rare case : the ray is almost parallel to the planes, so they don't have any "intersection"
-			if (-e + aabb_min.x > 0.0f || -e + aabb_max.x < 0.0f)
-				return false;
-		}
-	}
-
-
-	// Test intersection with the 2 planes perpendicular to the OBB's Y axis
-	// Exactly the same thing than above.
-	{
-		const glm::vec3 yaxis(model_matrix[1].x, model_matrix[1].y, model_matrix[1].z);
-		const auto e = glm::dot(yaxis, delta);
-		const auto f = glm::dot(ray_direction, yaxis);
-
-		if (fabs(f) > 0.001f) {
-			auto t1 = (e + aabb_min.y) / f;
-			auto t2 = (e + aabb_max.y) / f;
-
-			if (t1 > t2) { const auto w = t1; t1 = t2; t2 = w; }
-
-			if (t2 < t_max)
-				t_max = t2;
-			if (t1 > t_min)
-				t_min = t1;
-			if (t_min > t_max)
-				return false;
-
-		}
-		else {
-			if (-e + aabb_min.y > 0.0f || -e + aabb_max.y < 0.0f)
-				return false;
-		}
-	}
-
-
-	// Test intersection with the 2 planes perpendicular to the OBB's Z axis
-	// Exactly the same thing than above.
-	{
-		const glm::vec3 zaxis(model_matrix[2].x, model_matrix[2].y, model_matrix[2].z);
-		const auto e = glm::dot(zaxis, delta);
-		const auto f = glm::dot(ray_direction, zaxis);
-
-		if (fabs(f) > 0.001f) {
-			auto t1 = (e + aabb_min.z) / f;
-			auto t2 = (e + aabb_max.z) / f;
-
-			if (t1 > t2) { const auto w = t1; t1 = t2; t2 = w; }
-
-			if (t2 < t_max)
-				t_max = t2;
-			if (t1 > t_min)
-				t_min = t1;
-			if (t_min > t_max)
-				return false;
-
-		}
-		else {
-			if (-e + aabb_min.z > 0.0f || -e + aabb_max.z < 0.0f)
-				return false;
-		}
-	}
-
-	intersection_distance = t_min;
-	return true;
-
-}
-
-
-void Core::checkAllChildren(Model* mdl, glm::vec3 ray_origin, glm::vec3 ray_direction, float& intersection_distance)
-{
-	for (auto &m : mdl->getChildren())
-	{
-		checkAllChildren(&m, ray_origin, ray_direction, intersection_distance);
-		//if (selectedModel_ != nullptr) break;
-		float distance = 0.f;
-		if (testRayObbIntersection(
-			ray_origin,
-			ray_direction,
-			m.aabb_min,
-			m.aabb_max,
-			getModelMatrix(findGraphNode(&m, &root_), &m),
-			distance)
-			) {
-			if (distance < intersection_distance)
-			{
-				intersection_distance = distance;
-				selectedModel_ = &m;
-				for (auto &mes : selectedModel_->getMeshes())
-					mes.outline = true;
-			}
-		}
-	}
-}
-
-GraphNode* Core::findGraphNode(Model* mdl, GraphNode* root) const
-{
-	if (root == nullptr)
-		return root;
-
-	if (findModelByModel(root->getModel(), mdl) != nullptr)
-		return root;
-
-	for (auto &node : root->children)
-	{
-		auto *ret = findGraphNode(mdl, node);
-		if (ret != nullptr)
-			return ret;
-	}
-	return nullptr;
-}
-Model* Core::findModelByModel(Model* root, Model* mdl) const
-{
-	if (root == nullptr || mdl == nullptr)
-		return nullptr;
-	if (root == mdl)
-		return root;
-	for (auto &child : root->getChildren())
-	{
-		auto *ret = findModelByModel(&child, mdl);
-		if (ret != nullptr)
-			return ret;
-	}
-	return nullptr;
-}
-glm::mat4 Core::getModelMatrix(GraphNode* node, Model* mdl)
-{
-	if (node == nullptr || mdl == nullptr)
-		return glm::mat4(0.f);
-	Transform ret = root_.getTransform().getMatrix();
-	{
-		auto it = &root_;
-		while (it != nullptr)
-		{
-			for (auto child : it->children)
-			{
-				if (child == node)
-				{
-					it = nullptr;
-					break;
-				}
-				if (isAncestor(child, node))
-				{
-					ret.combine(child->getTransform());
-					it = child;
-					break;
-				}
-			}
-		}
-		ret.combine(node->getTransform());
-	}
-	{
-		auto it = node->getModel();
-		while (it != nullptr && it!= mdl)
-		{
-			ret.translate(it->pos).rotate(it->rot).scale(it->scale);
-			for (auto& child : it->getChildren())
-			{
-				if (&child == mdl)
-				{
-					it = nullptr;
-					break;
-				}
-				if (isAncestor(&child, mdl))
-				{
-					it = &child;
-					break;
-				}
-			}
-		}
-		ret.translate(mdl->pos).rotate(mdl->rot).scale(mdl->scale);
-	}
-	return ret.getMatrix();
-}
-bool Core::isAncestor(GraphNode* parent, GraphNode* child) const
-{
-	if (parent == nullptr || child == nullptr)
-		return false;
-	if (parent == child)
-		return false;
-	for (auto& node : parent->children)
-	{
-		if (node == child)
-			return true;
-		if (isAncestor(node, child))
-			return true;
-	}
-	return false;
-}
-bool Core::isAncestor(Model* parent, Model* child) const
-{
-	if (parent == nullptr || child == nullptr)
-		return false;
-	if (parent == child)
-		return false;
-	for (auto& node : parent->getChildren())
-	{
-		if (&node == child)
-			return true;
-		if (isAncestor(&node, child))
-			return true;
-	}
-	return false;
 }

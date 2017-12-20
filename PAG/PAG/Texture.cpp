@@ -1,4 +1,5 @@
 #include "Texture.h"
+#include "Logger.h"
 
 using namespace std;
 
@@ -35,7 +36,7 @@ bool Texture::loadTexture(const char* path, string directory)
 	}
 	else
 	{
-		std::cout << "Failed to load texture: " << filename << std::endl;
+		Logger::logError(string_format("Failed to load texture: %s",filename));
 	}
 	stbi_image_free(data);
 	return success;

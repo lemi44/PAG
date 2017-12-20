@@ -4,6 +4,43 @@
 #include "Camera.h"
 #include <map>
 
+struct ModelStorage
+{
+private:
+	std::vector<Model> allModels_;
+	std::map<int, Model*> modelRefs_;
+	void insertAllIDs(Model& model)
+	{
+		modelRefs_.insert(std::make_pair(model.getID(), &model));
+		for(auto& child : model.getChildren())
+		{
+			insertAllIDs(child);
+		}
+	}
+public:
+	int addModel(Model&& model)
+	{
+		allModels_.push_back(model);
+		insertAllIDs(model);
+		return model.getID();
+	}
+	Model* getModel(int const i) const
+	{
+		try
+		{
+			return modelRefs_.at(i);
+		}
+		catch (std::out_of_range)
+		{
+			return nullptr;
+		}
+	}
+	std::vector<Model>& getAllModels()
+	{
+		return allModels_;
+	}
+};
+
 class Core
 {
 private:
@@ -17,28 +54,16 @@ private:
 	bool firstMouse_, showGui_, drawColor_;
 	float intersection_distance;
 	std::map<int, bool> pressedKeys_;
-	std::vector<Model> allModels_;
+	ModelStorage models_;
 	Model* selectedModel_;
 	static void windowSizeCallback(GLFWwindow* window, int width, int height);
-	void render(float tpf, GLFWwindow* window);
+	void render(float tpf, GLFWwindow* window, Shader* shader);
 	void update(GLFWwindow* window);
 	int init(int width, int height);
 	void processInput(GLFWwindow* window);
 	static void scrollCallback(GLFWwindow * window, double xoffset, double yoffset);
-	void mainloop(GLFWwindow* window);
+	void mainloop(GLFWwindow* window, Shader* shader);
 	static void mouseCallback(GLFWwindow* window, double xpos, double ypos);
-	void screenPosToWorldRay(int mouse_x, int mouse_y, int screen_width, int screen_height,
-		glm::mat4 view_matrix, glm::mat4 projection_matrix, glm::vec3& out_origin,
-		glm::vec3& out_direction) const;
-	bool testRayObbIntersection(glm::vec3 ray_origin, glm::vec3 ray_direction,
-		glm::vec3 aabb_min, glm::vec3 aabb_max, glm::mat4 model_matrix, float& intersection_distance) const;
-	void checkAllChildren(Model* mdl, glm::vec3 ray_origin, glm::vec3 ray_direction, float& intersection_distance);
-	Model* findModelByID(int i, Model* mdl);
-	GraphNode* findGraphNode(Model* mdl, GraphNode* root) const;
-	Model* findModelByModel(Model* root, Model* mdl) const;
-	glm::mat4 getModelMatrix(GraphNode* node, Model* mdl);
-	bool isAncestor(GraphNode* parent, GraphNode* child) const;
-	bool isAncestor(Model* parent, Model* child) const;
 	static Core* ref_;
 	Core();
 public:

@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "Logger.h"
 
 
 void Mesh::setupMesh()
@@ -29,32 +30,42 @@ void Mesh::setupMesh()
 	glBindVertexArray(0);
 }
 
-Mesh::Mesh(const vector<Vertex> vertices, const vector<unsigned int> indices, const vector<Texture> textures) : outline(false)
+Mesh::Mesh(const vector<Vertex> vertices, const vector<unsigned int> indices, const Material material) : outline(false)
 {
 	this->vertices = vertices;
 	this->indices = indices;
-	this->textures = textures;
+	this->material = material;
 
 	setupMesh();
 }
 
 void Mesh::draw(Shader* shader)
 {
-	unsigned int diffuse_nr = 1;
-	unsigned int specular_nr = 1;
-	for (unsigned int i = 0; i < textures.size(); i++)
+	auto diffuse_n = 0;
+	auto specular_n = 0;
+	for (unsigned int i = 0; i < material.textures.size(); i++)
 	{
-		glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
-											  // retrieve texture number (the N in diffuse_textureN)
-		string number;
-		const auto name = textures[i].type;
+		auto number = -1;
+		const auto name = material.textures[i].type;
 		if (name == "texture_diffuse")
-			number = std::to_string(diffuse_nr++);
+			number = diffuse_n++;
 		else if (name == "texture_specular")
-			number = std::to_string(specular_nr++);
-		glUniform1i(glGetUniformLocation(shader->get(), ("material." + name + number).c_str()), i);
-		glBindTexture(GL_TEXTURE_2D, textures[0].id);
+			number = specular_n++;
+
+		if (number != 1)
+		{
+			Logger::logWarning(string_format("Ignored texture %s of type %s", material.textures[i].path.c_str(), name.c_str()));
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+												 // retrieve texture number (the N in diffuse_textureN)
+			shader->setInt("material." + name.substr(8), i);
+			glBindTexture(GL_TEXTURE_2D, material.textures[0].id);
+		}
 	}
+	if (diffuse_n < 1) Logger::logWarning("No diffuse texture loaded!");
+	if (specular_n < 1) Logger::logWarning("No specular texture loaded!");
 	glActiveTexture(GL_TEXTURE0);
 
 	if (outline)
@@ -74,11 +85,10 @@ void Mesh::draw(Shader* shader)
 void Mesh::drawColor(Shader* shader, const GLuint id) const
 {
 	// Convert "i", the integer mesh ID, into an RGB color
-	int r = (id & 0x000000FF) >> 0;
-	int g = (id & 0x0000FF00) >> 8;
-	int b = (id & 0x00FF0000) >> 16;
-	const GLuint pickingColorID = glGetUniformLocation(shader->get(), "PickingColor");
-	glUniform4f(pickingColorID, r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+	const int r = (id & 0x000000FF) >> 0;
+	const int g = (id & 0x0000FF00) >> 8;
+	const int b = (id & 0x00FF0000) >> 16;
+	shader->setVec4("PickingColor", r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);

@@ -19,22 +19,22 @@ void GraphNode::setTransform(Transform const local)
 	dirty_ = true;
 }
 
-void GraphNode::render(Transform parent_world, bool dirty, bool aabb, Shader* sha, Shader* line_shader)
+void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, Shader* sha, Shader* line_shader)
 {
 	if (!sha) sha = shader_;
 	if (!line_shader) line_shader = line_shader_;
 	dirty |= dirty_;
 	if (dirty)
 	{
-		world_ = local_.combine(parent_world);
+		world_ = local_.combine(model_mat);
 		dirty_ = false;
 	}
 
-	if (model_) renderModel(model_, world_, sha, line_shader, aabb);
+	if (model_) renderModel(model_, wvp, world_, sha, line_shader, picking_color);
 
 	for (auto child : children)
 	{
-		child->render(world_, dirty, aabb, sha, line_shader);
+		child->render(world_, model_mat, dirty, picking_color, sha, line_shader);
 	}
 }
 
@@ -63,17 +63,17 @@ void GraphNode::setLineShader(Shader* shader)
 	line_shader_ = shader;
 }
 
-void GraphNode::renderModel(Model * model, Transform transform, Shader* sha, Shader* line_shader, bool aabb) const
+void GraphNode::renderModel(Model * model, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color) const
 {
 	
-	if (aabb)
+	if (picking_color)
 	{
-		glUseProgram(line_shader->get());
-		model->drawColor(line_shader);
-		glUseProgram(sha->get());
+		line_shader->use();
+		model->drawColor(line_shader, wvp);
+		sha->use();
 	}
 	else
 	{
-		model->draw(sha, transform);
+		model->draw(sha, wvp, model_mat);
 	}
 }

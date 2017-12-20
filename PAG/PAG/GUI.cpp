@@ -30,7 +30,7 @@ void GUI::ShowPropertyEditor(bool* p_open, std::vector<Model>& all_models)
 	ImGui::End();
 }
 
-void GUI::ShowObject(const char* prefix, Model* mdl)
+void GUI::ShowObject(const char* prefix, Model * mdl)
 {
 	ImGui::PushID(mdl->getID());                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
 	ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.

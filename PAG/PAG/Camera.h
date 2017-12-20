@@ -17,8 +17,6 @@ public:
 	double getYaw() const;
 	double getRoll() const;
 	GLfloat getFoV() const;
-	glm::mat4 getViewMatrix() const;
-	glm::mat4 getProjectionMatrix() const;
 	void setCameraPos(glm::vec3 pos);
 	void setCameraFront(glm::vec3 front);
 	void setPitch(double pitch);
@@ -32,8 +30,6 @@ private:
 	glm::vec3 cameraUp_;
 	glm::vec3 cameraFront_;
 	glm::mat4 wvp_;
-	glm::mat4 view_;
-	glm::mat4 projection_;
 	double pitch_, yaw_, roll_;
 	GLfloat fov_;
 	bool changed_;

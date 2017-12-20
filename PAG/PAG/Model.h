@@ -7,6 +7,7 @@
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include "Transform.h"
+#include "Material.h"
 
 
 using namespace std;
@@ -26,17 +27,18 @@ public:
 		world = Transform::origin();
 		processNode(node, scene);
 	}
-	void draw(Shader* shader, Transform transform);
-	void drawColor(Shader* shader);
+	void draw(Shader* shader, const Transform wvp, const Transform model);
+	void drawColor(Shader * shader, const Transform wvp);
 	vector<Mesh>& getMeshes();
 	vector<Model>& getChildren();
-	int getID();
+	int getID() const;
 	glm::vec3 aabb_min;
 	glm::vec3 aabb_max;
 	Transform world;
 	glm::vec3 pos;
 	glm::vec3 rot;
 	glm::vec3 scale;
+	glm::mat3 normalMat;
 private:
 	/*  Model Data  */
 	vector<Mesh> meshes;
@@ -48,6 +50,8 @@ private:
 	void loadModel(string path);
 	void processNode(aiNode *node, const aiScene *scene);
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+	void updateNormalMatrix();
+	void setWorld(const Transform& world);
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 		std::string typeName);
 };

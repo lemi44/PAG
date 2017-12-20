@@ -16,13 +16,13 @@ glm::mat4 Camera::getWVPMatrix(GLFWwindow* window)
 		/* Set world matrix to identity matrix */
 		glm::mat4 const world(1.0f);
 		/* Set view matrix */
-		view_ = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
+		const auto view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
 		int w;
 		int h;
 		glfwGetWindowSize(window, &w, &h);
-		projection_ = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
+		const auto projection = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
 		/* Set MVP matrix */
-		wvp_ = projection_ * view_ * world;
+		wvp_ = projection * view * world;
 		changed_ = false;
 	}
 	return wvp_;
@@ -97,16 +97,6 @@ double Camera::getRoll() const
 GLfloat Camera::getFoV() const
 {
 	return fov_;
-}
-
-glm::mat4 Camera::getViewMatrix() const
-{
-	return view_;
-}
-
-glm::mat4 Camera::getProjectionMatrix() const
-{
-	return projection_;
 }
 
 Camera::~Camera()

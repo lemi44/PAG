@@ -10,7 +10,7 @@ public:
 	GraphNode(Model* model);
 	~GraphNode();
 	
-	void render(Transform parentWorld, bool dirty, bool aabb, Shader* sha = NULL, Shader* line_shader = NULL);
+	void render(Transform wvp, Transform model, bool dirty, bool picking_color, Shader* sha = NULL, Shader* line_shader = NULL);
 	void addChild(GraphNode* node);
 	Model* getModel() const;
 	Transform getTransform() const;
@@ -18,6 +18,7 @@ public:
 	void setLineShader(Shader* shader);
 	void setTransform(Transform local);
 	std::vector<GraphNode*> children;
+	
 private:
 	Transform world_;
 	bool dirty_;
@@ -25,6 +26,6 @@ private:
 	Model* model_;
 	Shader* shader_;
 	Shader* line_shader_;
-	void renderModel(Model* model, Transform transform, Shader* sha, Shader* line_shader, bool aabb) const;
+	void renderModel(Model* model, Transform wvp, Transform model_mat, Shader* sha, Shader* line_shader, bool aabb) const;
 };
 

@@ -2,26 +2,28 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include "Logger.h"
 
-void Model::draw(Shader* shader, const Transform transform)
+void Model::draw(Shader* shader, const Transform wvp, const Transform model)
 {
-	world = transform.translate(pos).rotate(rot).scale(scale);
+	setWorld(model.translate(pos).rotate(rot).scale(scale));
 	/* Get uniform location and send MVP matrix there */
-	const GLuint tran_loc = glGetUniformLocation(shader->get(), "transform");
-	glUniformMatrix4fv(tran_loc, 1, GL_FALSE, &world.getMatrix()[0][0]);
+	shader->setMat4("model", world.getMatrix());
+	shader->setMat4("wvp", wvp.getMatrix());
+	shader->setMat3("normalMat", normalMat);
 	for (auto &m : meshes)
 		m.draw(shader);
 	for (auto &mdl : children)
-		mdl.draw(shader, world);
+		mdl.draw(shader, wvp, world);
 }
 
-void Model::drawColor(Shader* shader) {
-	const GLuint tran_loc = glGetUniformLocation(shader->get(), "MVP");
-	glUniformMatrix4fv(tran_loc, 1, GL_FALSE, &world.getMatrix()[0][0]);
+void Model::drawColor(Shader* shader, const Transform wvp) {
+	shader->setMat4("model", world.getMatrix());
+	shader->setMat4("wvp", wvp.getMatrix());
 	for (auto &m : meshes)
 		m.drawColor(shader, id);
 	for (auto &mdl : children)
-		mdl.drawColor(shader);
+		mdl.drawColor(shader, wvp);
 }
 
 vector<Mesh>& Model::getMeshes()
@@ -34,7 +36,7 @@ vector<Model>& Model::getChildren()
 	return children;
 }
 
-int Model::getID()
+int Model::getID() const
 {
 	return id;
 }
@@ -46,7 +48,7 @@ void Model::loadModel(string path)
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
-		cout << "ERROR::ASSIMP::" << import.GetErrorString() << endl;
+		Logger::logError(string_format("ASSIMP::%s", import.GetErrorString()));
 		return;
 	}
 	directory = path.substr(0, path.find_last_of('/'));
@@ -89,7 +91,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 {
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
-	vector<Texture> textures;
+	//vector<Texture> textures;
+	Material material;
 
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
@@ -137,16 +140,28 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	// process material
 	if (mesh->mMaterialIndex >= 0)
 	{
-		const auto material = scene->mMaterials[mesh->mMaterialIndex];
-		auto diffuse_maps = loadMaterialTextures(material,
+		const auto ai_material = scene->mMaterials[mesh->mMaterialIndex];
+		auto diffuse_maps = loadMaterialTextures(ai_material,
 			aiTextureType_DIFFUSE, "texture_diffuse");
-		textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
-		auto specular_maps = loadMaterialTextures(material,
+		material.textures.insert(material.textures.end(), diffuse_maps.begin(), diffuse_maps.end());
+		auto specular_maps = loadMaterialTextures(ai_material,
 			aiTextureType_SPECULAR, "texture_specular");
-		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
+		material.textures.insert(material.textures.end(), specular_maps.begin(), specular_maps.end());
+		ai_material->Get(AI_MATKEY_SHININESS, material.shininess);
 	}
 
-	return Mesh(vertices, indices, textures);
+	return Mesh(vertices, indices, material);
+}
+
+void Model::updateNormalMatrix()
+{
+	normalMat = glm::transpose(glm::inverse(world.getMatrix()));
+}
+
+void Model::setWorld(const Transform& world)
+{
+	this->world = world;
+	updateNormalMatrix();
 }
 
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType type, const string typeName)

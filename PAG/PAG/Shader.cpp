@@ -1,12 +1,15 @@
 #include "Shader.h"
+#include <fstream>
+#include "Logger.h"
 
-Shader::Shader(std::string vert_path, std::string frag_path)
+
+Shader::Shader(const std::string vert_path, const std::string frag_path)
 {
 	programHandle = glCreateProgram();
 
 	if (programHandle == 0)
 	{
-		fprintf(stderr, "Error creating program object.\n");
+		Logger::logError(string_format("Error creating program object.\n"));
 	}
 
 	/* Shader load from file and compile */
@@ -21,18 +24,18 @@ Shader::Shader(std::string vert_path, std::string frag_path)
 
 	if (status == GL_FALSE)
 	{
-		fprintf(stderr, "Failed to link shader program!\n");
+		Logger::logError(string_format("Failed to link shader program!\n"));
 
 		GLint logLen;
 		glGetProgramiv(programHandle, GL_INFO_LOG_LENGTH, &logLen);
 
 		if (logLen > 0)
 		{
-			char* log = (char*)malloc(logLen);
+			auto log = static_cast<char*>(malloc(logLen));
 			GLsizei written;
 			glGetProgramInfoLog(programHandle, logLen, &written, log);
 
-			fprintf(stderr, "Program log: \n%s", log);
+			Logger::logError(string_format("Program log: \n%s", log));
 			free(log);
 		}
 	}
@@ -54,7 +57,7 @@ std::string Shader::loadShader(std::string fileName)
 
 	if (!inFile)
 	{
-		fprintf(stderr, "Could not open file %s", fileName.c_str());
+		Logger::logError(string_format("Could not open file %s", fileName.c_str()));
 		inFile.close();
 
 		return nullptr;
@@ -73,13 +76,13 @@ std::string Shader::loadShader(std::string fileName)
 
 
 /* Load and compile shader from the external file (uses loadShader(std::string) function) */
-void Shader::loadAndCompileShaderFromFile(GLint shaderType, std::string fileName, GLuint& programHandle)
+void Shader::loadAndCompileShaderFromFile(const GLint shaderType, std::string fileName, GLuint& programHandle)
 {
-	GLuint shaderObject = glCreateShader(shaderType);
+	const auto shaderObject = glCreateShader(shaderType);
 
 	if (shaderObject == 0)
 	{
-		fprintf(stderr, "Error creating %s.\n", fileName.c_str());
+		Logger::logError(string_format("Error creating %s.", fileName.c_str()));
 		return;
 	}
 
@@ -87,7 +90,7 @@ void Shader::loadAndCompileShaderFromFile(GLint shaderType, std::string fileName
 
 	if (shaderCodeString.empty())
 	{
-		printf("Shader code is empty! Shader name %s\n", fileName.c_str());
+		Logger::logWarning(string_format("Shader code is empty! Shader name %s", fileName.c_str()));
 		return;
 	}
 
@@ -102,19 +105,19 @@ void Shader::loadAndCompileShaderFromFile(GLint shaderType, std::string fileName
 
 	if (result == GL_FALSE)
 	{
-		fprintf(stderr, "%s compilation failed!\n", fileName.c_str());
+		Logger::logError(string_format("%s compilation failed!", fileName.c_str()));
 
 		GLint logLen;
 		glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &logLen);
 
 		if (logLen > 0)
 		{
-			char * log = (char *)malloc(logLen);
+			auto log = static_cast<char *>(malloc(logLen));
 
 			GLsizei written;
 			glGetShaderInfoLog(shaderObject, logLen, &written, log);
 
-			fprintf(stderr, "Shader log: \n%s", log);
+			Logger::logError(string_format("Shader log: \n%s", log));
 			free(log);
 		}
 
@@ -124,7 +127,71 @@ void Shader::loadAndCompileShaderFromFile(GLint shaderType, std::string fileName
 	glAttachShader(programHandle, shaderObject);
 	glDeleteShader(shaderObject);
 }
-GLuint Shader::get()
+GLuint Shader::get() const
 {
 	return programHandle;
+}
+// activate the shader
+// ------------------------------------------------------------------------
+void Shader::use() const
+{
+	glUseProgram(programHandle);
+}
+// utility uniform functions
+// ------------------------------------------------------------------------
+void Shader::setBool(const std::string &name, const bool value) const
+{
+	glUniform1i(glGetUniformLocation(programHandle, name.c_str()), int(value));
+}
+// ------------------------------------------------------------------------
+void Shader::setInt(const std::string &name, const int value) const
+{
+	glUniform1i(glGetUniformLocation(programHandle, name.c_str()), value);
+}
+// ------------------------------------------------------------------------
+void Shader::setFloat(const std::string &name, const float value) const
+{
+	glUniform1f(glGetUniformLocation(programHandle, name.c_str()), value);
+}
+// ------------------------------------------------------------------------
+void Shader::setVec2(const std::string &name, const glm::vec2 &value) const
+{
+	glUniform2fv(glGetUniformLocation(programHandle, name.c_str()), 1, &value[0]);
+}
+void Shader::setVec2(const std::string &name, const float x, const float y) const
+{
+	glUniform2f(glGetUniformLocation(programHandle, name.c_str()), x, y);
+}
+// ------------------------------------------------------------------------
+void Shader::setVec3(const std::string &name, const glm::vec3 &value) const
+{
+	glUniform3fv(glGetUniformLocation(programHandle, name.c_str()), 1, &value[0]);
+}
+void Shader::setVec3(const std::string &name, const float x, const float y, const float z) const
+{
+	glUniform3f(glGetUniformLocation(programHandle, name.c_str()), x, y, z);
+}
+// ------------------------------------------------------------------------
+void Shader::setVec4(const std::string &name, const glm::vec4 &value) const
+{
+	glUniform4fv(glGetUniformLocation(programHandle, name.c_str()), 1, &value[0]);
+}
+void Shader::setVec4(const std::string &name, const float x, const float y, const float z, const float w) const
+{
+	glUniform4f(glGetUniformLocation(programHandle, name.c_str()), x, y, z, w);
+}
+// ------------------------------------------------------------------------
+void Shader::setMat2(const std::string &name, const glm::mat2 &mat) const
+{
+	glUniformMatrix2fv(glGetUniformLocation(programHandle, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+// ------------------------------------------------------------------------
+void Shader::setMat3(const std::string &name, const glm::mat3 &mat) const
+{
+	glUniformMatrix3fv(glGetUniformLocation(programHandle, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+// ------------------------------------------------------------------------
+void Shader::setMat4(const std::string &name, const glm::mat4 &mat) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(programHandle, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
