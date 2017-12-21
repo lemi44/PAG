@@ -53,13 +53,17 @@ uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform Material material;
 
+float alpha_cutoff = 0.01;
+
 // function prototypes
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
-{    
+{
+	if(vec4(texture(material.diffuse, TexCoord)).a < alpha_cutoff)
+		discard;
     // properties
     vec3 norm = normalize(ourNormal);
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -79,6 +83,7 @@ void main()
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     
     FragColor = vec4(result, 1.0);
+	
 }
 
 // calculates the color when using a directional light.

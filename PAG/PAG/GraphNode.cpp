@@ -34,7 +34,7 @@ void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirt
 
 	for (auto child : children)
 	{
-		child->render(world_, model_mat, dirty, picking_color, sha, line_shader);
+		child->render(wvp, world_, dirty, picking_color, sha, line_shader);
 	}
 }
 

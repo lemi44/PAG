@@ -1,11 +1,12 @@
 #include "GUI.h"
 #include "imgui.h"
+#include <glm/glm.hpp>
 
 std::string const GUI::labels[4] = { "World Translation##value", "Translate##value", "Rotate##value", "Scale##value" };
 float const GUI::min[4] = { -50.0f, -50.0f, -glm::pi<float>(), 0.0f };
 float const GUI::max[4] = { 50.0f, 50.0f, glm::pi<float>(), 2.0f };
 
-void GUI::ShowPropertyEditor(bool* p_open, std::vector<Model>& all_models)
+void GUI::ShowPropertyEditor(bool* p_open, std::vector<Model*>& all_models)
 {
 	ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("Property editor", p_open))
@@ -21,8 +22,8 @@ void GUI::ShowPropertyEditor(bool* p_open, std::vector<Model>& all_models)
 
 
 	// Iterate dummy objects with dummy members (all the same data)
-	for (auto &mdl : all_models)
-		ShowObject("Object", &mdl);
+	for (auto mdl : all_models)
+		ShowObject("Object", mdl);
 
 	ImGui::Columns(1);
 	ImGui::Separator();

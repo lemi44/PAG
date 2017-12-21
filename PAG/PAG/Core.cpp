@@ -3,15 +3,34 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <sstream>
+#include <fstream>
 #include <GLFW/glfw3.h>
 #include "Window.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "GUI.h"
 #include "Logger.h"
-#include "BaseLight.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
+#include <string>
+#include <vector>
+#include <iterator>
+
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		*(result++) = item;
+	}
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, std::back_inserter(elems));
+	return elems;
+}
+
 
 Core* Core::ref_ = nullptr;
 
@@ -55,8 +74,7 @@ int Core::init(int const width, int const height)
 	Shader line_sha("Shaders/line.vert", "Shaders/line.frag");
 	/* Apply shader */
 	sha.use();
-	const auto tree_id = models_.addModel(Model("Assets/treeplan1.fbx"));
-	const auto pion_id = models_.addModel(Model("Assets/hierarchy.fbx"));
+	loadContent(&sha);
 
 	glfwSetInputMode(win.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -79,20 +97,7 @@ int Core::init(int const width, int const height)
 	root_.setShader(&sha);
 	root_.setLineShader(&line_sha);
 
-	GraphNode tree(models_.getModel(tree_id));
-	GraphNode pion(models_.getModel(pion_id));
 
-	tree.setTransform(tree.getTransform().rotate(glm::vec3(glm::radians(-90.f), 0.f, 0.f)).scale(glm::vec3(.1f)));
-	pion.setTransform(pion.getTransform().translate(glm::vec3(40.0f, -20.0f, 0.0f)));
-	root_.addChild(&tree);
-	root_.addChild(&pion);
-	DirectionalLight dir_light(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.05f), glm::vec3(0.4f), glm::vec3(0.5f));
-	PointLight point_light(glm::vec3(0.05f), glm::vec3(0.8f), glm::vec3(1.0f), glm::vec3(3.0f, 2.0f, 3.0f), 1.0f, 0.9f, 0.032f);
-	SpotLight spot_light(glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-3.0f, 2.0f, -3.0f), glm::normalize(glm::vec3(-3.0f, 2.0f, -3.0f) - glm::vec3(0.0f)), glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f)), 1.0f, 0.9f, 0.032f);
-
-	dir_light.setupShader(&sha);
-	point_light.setupShader(&sha);
-	spot_light.setupShader(&sha);
 
 	mainloop(win.get(), &sha);
 
@@ -215,50 +220,6 @@ void Core::processInput(GLFWwindow* window)
 void Core::update(GLFWwindow* window)
 {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) && showGui_ && !ImGui::GetIO().WantCaptureMouse) {
-		//glm::vec3 ray_origin;
-		//glm::vec3 ray_direction;
-		//int screen_width, screen_height;
-		//glfwGetWindowSize(window, &screen_width, &screen_height);
-		//double mouseX = 0, mouseY = 0;
-		//glfwGetCursorPos(window, &mouseX, &mouseY);
-		//screenPosToWorldRay(
-		//	int(mouseX), screen_height - int(mouseY),
-		//	screen_width, screen_height,
-		//	cam_.getViewMatrix(),
-		//	cam_.getProjectionMatrix(),
-		//	ray_origin,
-		//	ray_direction
-		//);
-
-		////ray_direction = ray_direction*20.0f;
-		//if (selectedModel_ != nullptr)
-		//	for (auto &m : selectedModel_->getMeshes())
-		//		m.outline = false;
-		//selectedModel_ = nullptr;
-
-		//// Test each each Oriented Bounding Box (OBB).
-		//// A physics engine can be much smarter than this, 
-		//// because it already has some spatial partitionning structure, 
-		//// like Binary Space Partitionning Tree (BSP-Tree),
-		//// Bounding Volume Hierarchy (BVH) or other.
-		//intersection_distance = std::numeric_limits<float>::max(); // Output of TestRayOBBIntersection()
-		//for (auto &m : allModels_)
-		//{
-		//	checkAllChildren(&m, ray_origin, ray_direction, intersection_distance);
-		//	float distance;
-		//	
-		//	if (testRayObbIntersection(ray_origin, ray_direction, m.aabb_min, m.aabb_max, getModelMatrix(findGraphNode(&m, &root_), &m), distance))
-		//	{
-		//		if (distance < intersection_distance)
-		//		{
-		//			intersection_distance = distance;
-		//			selectedModel_ = &m;
-		//			for (auto &mes : selectedModel_->getMeshes())
-		//				mes.outline = true;
-		//		}
-		//	}
-		//}
-
 		if (selectedModel_ != nullptr)
 			for (auto &m : selectedModel_->getMeshes())
 				m.outline = false;
@@ -332,6 +293,254 @@ void Core::update(GLFWwindow* window)
 
 }
 
+void Core::loadContent(Shader* shader)
+{
+	std::ifstream content_manifest_file("level.map");
+	std::string line;
+	auto count = 0;
+	if (!content_manifest_file)
+	{
+		Logger::logError("Could not open file level.map!");
+		content_manifest_file.close();
+		return;
+	}
+	//Assert version
+	getline(content_manifest_file, line);
+	count++;
+	if (line != "PAG5_1")
+	{
+		Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+		content_manifest_file.close();
+		return;
+	}
+	while (content_manifest_file.good())
+	{
+		getline(content_manifest_file, line);
+		count++;
+		auto x = split(line, ':');
+		if (x[0] == "MDL")
+		{
+			// Assert size 5
+			if (x.size() != 5)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			Model* mdl = new Model(x[1]);
+			models_.addModel(mdl);
+			nodes_.addNode(new GraphNode(mdl));
+			glm::vec3 pos, rot, scale;
+			auto pos_str = split(x[2], ',');
+			if (pos_str.size() == 0)
+				pos = glm::vec3(0.0f);
+			else if (pos_str.size() == 1)
+				pos = glm::vec3(atof(pos_str[0].c_str()));
+			else if (pos_str.size() == 3)
+				pos = glm::vec3(atof(pos_str[0].c_str()), atof(pos_str[1].c_str()), atof(pos_str[2].c_str()));
+			else
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			auto rot_str = split(x[3], ',');
+			if (rot_str.size() == 0)
+				rot = glm::vec3(0.0f);
+			else if (rot_str.size() == 1)
+				rot = glm::vec3(glm::radians(atof(rot_str[0].c_str())));
+			else if (rot_str.size() == 3)
+			{
+				float f1 = atof(rot_str[0].c_str());
+				float f2 = atof(rot_str[1].c_str());
+				float f3 = atof(rot_str[2].c_str());
+				rot = glm::vec3(glm::radians(f1), glm::radians(f2), glm::radians(f3));
+			}
+			else
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			auto scale_str = split(x[4], ',');
+			if (scale_str.size() == 0)
+				scale = glm::vec3(1.0f);
+			else if (scale_str.size() == 1)
+				scale = glm::vec3(atof(scale_str[0].c_str()));
+			else if (scale_str.size() == 3)
+			{
+				float f1 = atof(scale_str[0].c_str());
+				float f2 = atof(scale_str[1].c_str());
+				float f3 = atof(scale_str[2].c_str());
+				scale = glm::vec3(f1, f2, f3);
+			}
+			else
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			nodes_.getAllNodes().back()->setTransform(nodes_.getAllNodes().back()->getTransform().translate(pos).rotate(rot).scale(scale));
+			root_.addChild(nodes_.getAllNodes().back());
+		}
+		else if (x[0] == "DIL")
+		{
+			// Assert size 5
+			if (x.size() != 5)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			glm::vec3 val[4];
+			for (auto i = 0; i < 4; i++)
+			{
+				auto str = split(x[i + 1], ',');
+				if (str.size() == 1)
+				{
+					if (str[0].empty())
+						val[i] = glm::vec3(0.0f);
+					else
+					{
+						val[i] = glm::vec3(atof(str[0].c_str()));
+					}
+				}
+				else if (str.size() == 3)
+				{
+					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
+				}
+				else
+				{
+					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+					content_manifest_file.close();
+					return;
+				}
+			}
+			dir_light_ = DirectionalLight(val[0], val[1], val[2], val[3]);
+			dir_light_.setupShader(shader);
+		}
+		else if (x[0] == "POL")
+		{
+			// Assert size 8
+			if (x.size() != 8)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			glm::vec3 val[4];
+			for (auto i = 0; i < 4; i++)
+			{
+				auto str = split(x[i + 1], ',');
+				if (str.size() == 1)
+				{
+					if (str[0].empty())
+						val[i] = glm::vec3(0.0f);
+					else
+					{
+						val[i] = glm::vec3(atof(str[0].c_str()));
+					}
+				}
+				else if (str.size() == 3)
+				{
+					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
+				}
+				else
+				{
+					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+					content_manifest_file.close();
+					return;
+				}
+			}
+			float vf[3];
+			for (auto i = 0; i < 3; i++)
+			{
+				auto str = split(x[i + 5], ',');
+				if (str.size() == 1)
+				{
+					if (str[0].empty())
+						vf[i] = 0.0f;
+					else
+					{
+						vf[i] = atof(str[0].c_str());
+					}
+				}
+				else
+				{
+					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+					content_manifest_file.close();
+					return;
+				}
+			}
+			point_light_ = PointLight(val[0], val[1], val[2], val[3], vf[0], vf[1], vf[2]);
+			point_light_.setupShader(shader);
+		}
+		else if (x[0] == "SPL")
+		{
+			// Assert size 11
+			if (x.size() != 11)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+			glm::vec3 val[5];
+			for (auto i = 0; i < 5; i++)
+			{
+				auto str = split(x[i + 1], ',');
+				if (str.size() == 1)
+				{
+					if (str[0].empty())
+						val[i] = glm::vec3(0.0f);
+					else
+					{
+						val[i] = glm::vec3(atof(str[0].c_str()));
+					}
+				}
+				else if (str.size() == 3)
+				{
+					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
+				}
+				else
+				{
+					Logger::logError("File level.map is not supported!");
+					content_manifest_file.close();
+					return;
+				}
+			}
+			float vf[5];
+			for (auto i = 0; i < 5; i++)
+			{
+				auto str = split(x[i + 6], ',');
+				if (str.size() == 1)
+				{
+					if (str[0].empty())
+						vf[i] = 0.0f;
+					else
+					{
+						vf[i] = atof(str[0].c_str());
+					}
+				}
+				else
+				{
+					Logger::logError("File level.map is not supported!");
+					content_manifest_file.close();
+					return;
+				}
+			}
+			spot_light_ = SpotLight(val[0], val[1], val[2], val[3], val[4], glm::cos(glm::radians(vf[0])), glm::cos(glm::radians(vf[1])), vf[2], vf[3], vf[4]);
+			spot_light_.setupShader(shader);
+		}
+		else
+		{
+			Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+			content_manifest_file.close();
+			return;
+		}
+	}
+	content_manifest_file.close();
+}
+
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
 	/* Clear the color buffer & depth buffer*/
@@ -388,6 +597,8 @@ void Core::mouseCallback(GLFWwindow * window, double const xpos, double const yp
 
 Core::~Core()
 {
+	nodes_.clear();
+	models_.clear();
 	ImGui_ImplGlfwGL3_Shutdown();
 	glfwTerminate();
 }

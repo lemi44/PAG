@@ -48,9 +48,9 @@ void Mesh::draw(Shader* shader)
 		auto number = -1;
 		const auto name = material.textures[i].type;
 		if (name == "texture_diffuse")
-			number = diffuse_n++;
+			number = ++diffuse_n;
 		else if (name == "texture_specular")
-			number = specular_n++;
+			number = ++specular_n;
 
 		if (number != 1)
 		{
@@ -64,8 +64,6 @@ void Mesh::draw(Shader* shader)
 			glBindTexture(GL_TEXTURE_2D, material.textures[0].id);
 		}
 	}
-	if (diffuse_n < 1) Logger::logWarning("No diffuse texture loaded!");
-	if (specular_n < 1) Logger::logWarning("No specular texture loaded!");
 	glActiveTexture(GL_TEXTURE0);
 
 	if (outline)
@@ -80,6 +78,13 @@ void Mesh::draw(Shader* shader)
 	{
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	}
+	// clear textures
+	for (auto i = 0; i< 31; i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	glActiveTexture(GL_TEXTURE0);
 }
 
 void Mesh::drawColor(Shader* shader, const GLuint id) const

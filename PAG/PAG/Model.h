@@ -16,7 +16,7 @@ class Model
 {
 public:
 	/*  Functions   */
-	Model(char *path) : aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
+	Model(const string path) : aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
 	{
 		loadModel(path);
 		world = Transform::origin();
