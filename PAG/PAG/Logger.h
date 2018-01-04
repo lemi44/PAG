@@ -26,7 +26,9 @@ class Logger
 {
 	static std::string filename;
 	static level current_level;
+	static std::ofstream log_file;
 public:
+	~Logger();
 	static void log(const std::string text, level level);
 	static void logError(const std::string text) { log(text, error); }
 	static void logWarning(const std::string text) { log(text, warning); }

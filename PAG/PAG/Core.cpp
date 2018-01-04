@@ -124,16 +124,52 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 			{
 				glm::vec3 pos = cam_.getCameraPos();
 				ImGui::Text("X:%f, Y:%f, Z:%f", pos.x, pos.y, pos.z);
-				if (selectedModel_ != nullptr)
+				if (selectedDrawable_ != nullptr)
 				{
-					ImGui::Text("Selected model with id:%d", selectedModel_->getID());
-					glm::mat4 matrix = selectedModel_->world.getMatrix();
-					glm::vec3 world(matrix[3][0], matrix[3][1], matrix[3][2]);
-					world -= pos;
-					ImGui::SliderFloat3("World Translation", reinterpret_cast<float*>(&world), -50.f, 50.f);
-					ImGui::SliderFloat3("Translate", reinterpret_cast<float*>(&selectedModel_->pos), -50.f, 50.f);
-					ImGui::SliderFloat3("Rotate", reinterpret_cast<float*>(&selectedModel_->rot), -glm::pi<float>(), glm::pi<float>());
-					ImGui::SliderFloat3("Scale", reinterpret_cast<float*>(&selectedModel_->scale), 0.f, 2.f);
+					if(selectedDrawable_->isLight())
+					{
+						// TODO: do light manipulation here
+						ImGui::Text("Selected light with id:%d", selectedDrawable_->getID());
+						BaseLight* light = static_cast<BaseLight*>(selectedDrawable_);
+						ImGui::ColorEdit3("Ambient", reinterpret_cast<float*>(&light->ambient));
+						ImGui::ColorEdit3("Diffuse", reinterpret_cast<float*>(&light->diffuse));
+						ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&light->specular));
+						switch(light->getType())
+						{
+						case directional:
+						{DirectionalLight * dir = static_cast<DirectionalLight*>(light);
+						ImGui::SliderFloat3("Direction", reinterpret_cast<float*>(&dir->local_direction), -1.f, 1.f);
+						}
+							break;
+						case point:
+						{PointLight * pt = static_cast<PointLight*>(light);
+						ImGui::SliderFloat3("Position", reinterpret_cast<float*>(&pt->local_position), -50.f, 50.f);
+						ImGui::SliderFloat("Constant", &pt->constant, 0.0f, 1.0f);
+						ImGui::SliderFloat("Linear", &pt->linear, 0.0f, 1.0f);
+						ImGui::SliderFloat("Quadratic", &pt->quadratic, 0.0f, 1.0f); }
+							break;
+						case spot:
+						{SpotLight * sp = static_cast<SpotLight*>(light);
+						ImGui::SliderFloat3("Direction", reinterpret_cast<float*>(&sp->local_direction), -1.0f, 1.0f);
+						ImGui::SliderFloat3("Position", reinterpret_cast<float*>(&sp->local_position), -50.f, 50.f);
+						ImGui::SliderFloat("Constant", &sp->constant, 0.0f, 1.0f);
+						ImGui::SliderFloat("Linear", &sp->linear, 0.0f, 1.0f);
+						ImGui::SliderFloat("Quadratic", &sp->quadratic, 0.0f, 1.0f); }
+							break;
+						}
+					}
+					else
+					{
+						Model* mdl = static_cast<Model*>(selectedDrawable_);
+						ImGui::Text("Selected model with id:%d", mdl->getID());
+						glm::mat4 matrix = mdl->world.getMatrix();
+						glm::vec3 world(matrix[3][0], matrix[3][1], matrix[3][2]);
+						world -= pos;
+						ImGui::SliderFloat3("World Translation", reinterpret_cast<float*>(&world), -50.f, 50.f);
+						ImGui::SliderFloat3("Translate", reinterpret_cast<float*>(&mdl->pos), -50.f, 50.f);
+						ImGui::SliderFloat3("Rotate", reinterpret_cast<float*>(&mdl->rot), -glm::pi<float>(), glm::pi<float>());
+						ImGui::SliderFloat3("Scale", reinterpret_cast<float*>(&mdl->scale), 0.f, 2.f);
+					}
 				}
 				else
 				{
@@ -220,10 +256,10 @@ void Core::processInput(GLFWwindow* window)
 void Core::update(GLFWwindow* window)
 {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) && showGui_ && !ImGui::GetIO().WantCaptureMouse) {
-		if (selectedModel_ != nullptr)
-			for (auto &m : selectedModel_->getMeshes())
+		if (selectedDrawable_ != nullptr)
+			for (auto &m : selectedDrawable_->getMeshes())
 				m.outline = false;
-		selectedModel_ = nullptr;
+		selectedDrawable_ = nullptr;
 
 		// Wait until all the pending drawing commands are really done.
 		// Ultra-mega-over slow ! 
@@ -272,17 +308,24 @@ void Core::update(GLFWwindow* window)
 				data[2] * 256 * 256;
 			if (picked_id == 0x00ffffff || picked_id == 0) { // Full white, must be the background !
 				Logger::logDebug("Picked BG!");
-				if (selectedModel_ != nullptr)
-					for (auto &m : selectedModel_->getMeshes())
+				if (selectedDrawable_ != nullptr)
+					for (auto &m : selectedDrawable_->getMeshes())
 						m.outline = false;
-				selectedModel_ = nullptr;
+				selectedDrawable_ = nullptr;
 			}
 			else {
 				Logger::logDebug(string_format("Picked id=%d,a=%d,b=%d,g=%d,r=%d", picked_id, int(data[3]), int(data[2]), int(data[1]), int(data[0])));
-				selectedModel_ = models_.getModel(picked_id);
-				if (selectedModel_ != nullptr)
+				selectedDrawable_ = models_.getModel(picked_id);
+				if(selectedDrawable_==nullptr)
+					for(auto light : lights_.getAllLights())
+						if (light->getID() == picked_id)
+						{
+							selectedDrawable_ = light;
+							break;
+						}
+				if (selectedDrawable_ != nullptr)
 				{
-					for (auto &mes : selectedModel_->getMeshes())
+					for (auto &mes : selectedDrawable_->getMeshes())
 						mes.outline = true;
 				}
 			}
@@ -290,7 +333,10 @@ void Core::update(GLFWwindow* window)
 
 
 	}
-
+	nodes_.getNode(3)->setTransform(nodes_.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
+	lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
+	lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
+	//nodes_.getNode(1)->setTransform(nodes_.getNode(1)->getTransform().rotate(glm::vec3(0.0f, 0.0f, gameTime_)));
 }
 
 void Core::loadContent(Shader* shader)
@@ -416,8 +462,10 @@ void Core::loadContent(Shader* shader)
 					return;
 				}
 			}
-			dir_light_ = DirectionalLight(val[0], val[1], val[2], val[3]);
-			dir_light_.setupShader(shader);
+			lights_.addLight(new DirectionalLight(val[0], val[1], val[2], val[3]));
+			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
+			root_.addChild(nodes_.getAllNodes().back());
+			lights_.getAllLights().back()->setupShader(shader);
 		}
 		else if (x[0] == "POL")
 		{
@@ -472,8 +520,10 @@ void Core::loadContent(Shader* shader)
 					return;
 				}
 			}
-			point_light_ = PointLight(val[0], val[1], val[2], val[3], vf[0], vf[1], vf[2]);
-			point_light_.setupShader(shader);
+			lights_.addLight(new PointLight(val[0], val[1], val[2], val[3], vf[0], vf[1], vf[2]));
+			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
+			root_.addChild(nodes_.getAllNodes().back());
+			lights_.getAllLights().back()->setupShader(shader);
 		}
 		else if (x[0] == "SPL")
 		{
@@ -528,8 +578,10 @@ void Core::loadContent(Shader* shader)
 					return;
 				}
 			}
-			spot_light_ = SpotLight(val[0], val[1], val[2], val[3], val[4], glm::cos(glm::radians(vf[0])), glm::cos(glm::radians(vf[1])), vf[2], vf[3], vf[4]);
-			spot_light_.setupShader(shader);
+			lights_.addLight(new SpotLight(val[0], val[1], val[2], val[3], val[4], glm::cos(glm::radians(vf[0])), glm::cos(glm::radians(vf[1])), vf[2], vf[3], vf[4]));
+			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
+			root_.addChild(nodes_.getAllNodes().back());
+			lights_.getAllLights().back()->setupShader(shader);
 		}
 		else
 		{
@@ -551,7 +603,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	if (wvp_changed)
 		wvp_.setMatrix(cam_.getWVPMatrix(window));
 	shader->setVec3("viewPos", cam_.getCameraPos());
-	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_);
+	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
 	if (showGui_)
 		ImGui::Render();
 }

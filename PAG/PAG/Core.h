@@ -3,9 +3,7 @@
 #include "GraphNode.h"
 #include "Camera.h"
 #include <map>
-#include "DirectionalLight.h"
-#include "PointLight.h"
-#include "SpotLight.h"
+#include "BaseLight.h"
 
 struct ModelStorage
 {
@@ -86,6 +84,40 @@ public:
 	}
 };
 
+struct LightStorage
+{
+private:
+	std::vector<BaseLight*> allLights_;
+public:
+	void addLight(BaseLight* node)
+	{
+		allLights_.push_back(node);
+	}
+	BaseLight* getLight(int const i) const
+	{
+		try
+		{
+			return allLights_.at(i);
+		}
+		catch (std::out_of_range)
+		{
+			return nullptr;
+		}
+	}
+	std::vector<BaseLight*>& getAllLights()
+	{
+		return allLights_;
+	}
+	void clear()
+	{
+		for (auto it = allLights_.begin(); it != allLights_.end(); ++it)
+		{
+			delete (*it);
+		}
+		allLights_.clear();
+	}
+};
+
 class Core
 {
 private:
@@ -100,11 +132,9 @@ private:
 	float intersection_distance;
 	std::map<int, bool> pressedKeys_;
 	ModelStorage models_;
-	Model* selectedModel_;
+	Drawable* selectedDrawable_;
 	NodeStorage nodes_;
-	DirectionalLight dir_light_;
-	PointLight point_light_;
-	SpotLight spot_light_;
+	LightStorage lights_;
 	static void windowSizeCallback(GLFWwindow* window, int width, int height);
 	void render(float tpf, GLFWwindow* window, Shader* shader);
 	void update(GLFWwindow* window);

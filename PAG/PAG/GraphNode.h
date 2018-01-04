@@ -7,12 +7,12 @@
 class GraphNode
 {
 public:
-	GraphNode(Model* model);
+	GraphNode(Drawable* model);
 	~GraphNode();
 	
-	void render(Transform wvp, Transform model, bool dirty, bool picking_color, Shader* sha = NULL, Shader* line_shader = NULL);
+	void render(Transform wvp, Transform model, bool dirty, bool picking_color, bool gui, Shader* sha = NULL, Shader* line_shader = NULL);
 	void addChild(GraphNode* node);
-	Model* getModel() const;
+	Drawable* getDrawable() const;
 	Transform getTransform() const;
 	void setShader(Shader* shader);
 	void setLineShader(Shader* shader);
@@ -23,9 +23,9 @@ private:
 	Transform world_;
 	bool dirty_;
 	Transform local_;
-	Model* model_;
+	Drawable* drawable_;
 	Shader* shader_;
 	Shader* line_shader_;
-	void renderModel(Model* model, Transform wvp, Transform model_mat, Shader* sha, Shader* line_shader, bool aabb) const;
+	void renderDrawable(Drawable* drawable, Transform wvp, Transform model_mat, Shader* sha, Shader* line_shader, bool picking_color, const bool gui) const;
 };
 

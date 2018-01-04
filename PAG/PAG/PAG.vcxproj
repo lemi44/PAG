@@ -161,6 +161,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphNode.cpp" />
     <ClCompile Include="GUI.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="Drawable.h" />
     <ClInclude Include="GraphNode.h" />
     <ClInclude Include="GUI.h" />
     <ClInclude Include="imconfig.h" />

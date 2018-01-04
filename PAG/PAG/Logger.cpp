@@ -12,6 +12,13 @@
 std::string Logger::filename = "";
 level Logger::current_level = LOG_DEFAULT_LEVEL;
 
+Logger::~Logger()
+{
+	if(log_file.is_open())
+	log_file << std::flush;
+	log_file.close();
+}
+
 void Logger::log(const std::string text, const level level)
 {
 	if (filename.empty())
@@ -23,6 +30,7 @@ void Logger::log(const std::string text, const level level)
 
 		if (std::strftime(mbstr, sizeof(mbstr), "log_%Y-%m-%d_%H%M%S.txt", &tm)) {
 			filename = std::string(mbstr);
+			log_file.open(filename, std::ios_base::out | std::ios_base::app);
 		}
 	}
 	std::string level_str;
@@ -55,13 +63,10 @@ void Logger::log(const std::string text, const level level)
 		oss << "[" << timestamp << "] " << level_str << text << "\n";
 		line = oss.str();
 	}
-	std::ofstream log_file;
-	log_file.open(filename, std::ios_base::out | std::ios_base::app);
 	if (log_file.is_open())
 	{
 		log_file << line;
 	}
-	log_file.close();
 	if (level <= current_level)
 		if (level <= warning)
 			std::cerr << line;

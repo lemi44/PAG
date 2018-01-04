@@ -1,10 +1,10 @@
 #include "GraphNode.h"
 
 
-GraphNode::GraphNode(Model * model)
+GraphNode::GraphNode(Drawable * drw)
 	: dirty_(true),
 	local_(Transform::origin()),
-	model_(model),
+	drawable_(drw),
 	shader_(nullptr)
 {
 }
@@ -19,7 +19,7 @@ void GraphNode::setTransform(Transform const local)
 	dirty_ = true;
 }
 
-void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, Shader* sha, Shader* line_shader)
+void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, const bool gui, Shader* sha, Shader* line_shader)
 {
 	if (!sha) sha = shader_;
 	if (!line_shader) line_shader = line_shader_;
@@ -30,11 +30,11 @@ void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirt
 		dirty_ = false;
 	}
 
-	if (model_) renderModel(model_, wvp, world_, sha, line_shader, picking_color);
+	if (drawable_) renderDrawable(drawable_, wvp, world_, sha, line_shader, picking_color, gui);
 
 	for (auto child : children)
 	{
-		child->render(wvp, world_, dirty, picking_color, sha, line_shader);
+		child->render(wvp, world_, dirty, picking_color, gui, sha, line_shader);
 	}
 }
 
@@ -43,9 +43,9 @@ void GraphNode::addChild(GraphNode * node)
 	children.push_back(node);
 }
 
-Model* GraphNode::getModel() const
+Drawable* GraphNode::getDrawable() const
 {
-	return model_;
+	return drawable_;
 }
 
 Transform GraphNode::getTransform() const
@@ -63,17 +63,24 @@ void GraphNode::setLineShader(Shader* shader)
 	line_shader_ = shader;
 }
 
-void GraphNode::renderModel(Model * model, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color) const
+void GraphNode::renderDrawable(Drawable * drawable, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
 {
 	
 	if (picking_color)
 	{
 		line_shader->use();
-		model->drawColor(line_shader, wvp);
+		drawable->drawColor(line_shader, wvp);
 		sha->use();
 	}
 	else
 	{
-		model->draw(sha, wvp, model_mat);
+		if (gui && drawable->isLight())
+		{
+			line_shader->use();
+			drawable->draw(line_shader, wvp, model_mat, gui);
+			sha->use();
+		}
+		else
+			drawable->draw(sha, wvp, model_mat, gui);
 	}
 }

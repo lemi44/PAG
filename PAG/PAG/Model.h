@@ -8,30 +8,30 @@
 #include <assimp/scene.h>
 #include "Transform.h"
 #include "Material.h"
+#include "Drawable.h"
 
 
 using namespace std;
 
-class Model
+class Model : public Drawable
 {
 public:
 	/*  Functions   */
-	Model(const string path) : aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
+	Model(const string path) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
 	{
 		loadModel(path);
 		world = Transform::origin();
 	}
-	Model(aiNode *node, const aiScene *scene, const string directory) : aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
+	Model(aiNode *node, const aiScene *scene, const string directory) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f)
 	{
 		this->directory = directory;
 		world = Transform::origin();
 		processNode(node, scene);
 	}
-	void draw(Shader* shader, const Transform wvp, const Transform model);
-	void drawColor(Shader * shader, const Transform wvp);
-	vector<Mesh>& getMeshes();
+	void draw(Shader* shader, const Transform wvp, const Transform model, const bool gui) final;
+	void drawColor(Shader * shader, const Transform wvp) final;
+	virtual vector<Mesh>& getMeshes() override;
 	vector<Model>& getChildren();
-	int getID() const;
 	glm::vec3 aabb_min;
 	glm::vec3 aabb_max;
 	Transform world;
@@ -45,7 +45,6 @@ private:
 	string directory;
 	vector<Texture> textures_loaded;
 	vector<Model> children;
-	int id;
 	/*  Functions   */
 	void loadModel(string path);
 	void processNode(aiNode *node, const aiScene *scene);

@@ -4,8 +4,8 @@
 
 SpotLight::SpotLight() : BaseLight()
 {
-	position = glm::vec3(0.0f, 1.0f, 2.0f);
-	direction = glm::vec3(0.0f, 0.0f, 1.0f);
+	local_position = real_position = glm::vec3(0.0f, 1.0f, 2.0f);
+	local_direction = real_direction = glm::vec3(0.0f, 0.0f, 1.0f);
 	constant = 1.0f;
 	linear = 0.09f;
 	quadratic = 0.032f;
@@ -16,9 +16,34 @@ SpotLight::SpotLight() : BaseLight()
 SpotLight::SpotLight(const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 	const glm::vec3 position, const glm::vec3 direction, const float cutOff,
 	const float outerCutOff, const float constant, const float linear, const float quadratic) :
-	BaseLight(ambient, diffuse, specular), position(position), direction(direction),
-	cutOff(cutOff), outerCutOff(outerCutOff), constant(constant), linear(linear), quadratic(quadratic)
+	BaseLight(ambient, diffuse, specular), local_position(position), real_position(position),
+	local_direction(direction), real_direction(direction), cutOff(cutOff),
+	outerCutOff(outerCutOff), constant(constant), linear(linear), quadratic(quadratic)
 {
+}
+
+void SpotLight::draw(Shader* shader, const Transform wvp, const Transform model, const bool gui)
+{
+	const auto tmp_pos = model.getMatrix() * glm::vec4(local_position, 1.0f);
+	real_position = glm::vec3(tmp_pos);
+	const auto tmp_dir = model.getMatrix() * glm::vec4(local_direction, 0.0f);
+	real_direction = glm::normalize(glm::vec3(tmp_dir));
+	if (gui)
+		drawColor(shader, wvp);
+	else
+		setupShader(shader);
+}
+
+void SpotLight::drawColor(Shader * shader, const Transform wvp)
+{
+	shader->setMat4("model", Transform::origin().translate(real_position).getMatrix());
+	shader->setMat4("wvp", wvp.getMatrix());
+	meshes_[0].drawColor(shader, id);
+}
+
+light_type SpotLight::getType() const
+{
+	return spot;
 }
 
 
@@ -28,8 +53,8 @@ SpotLight::~SpotLight()
 
 void SpotLight::setupShader(Shader* shader)
 {
-	shader->setVec3("spotLight.direction", direction);
-	shader->setVec3("spotLight.direction", direction);
+	shader->setVec3("spotLight.position", real_position);
+	shader->setVec3("spotLight.direction", real_direction);
 	shader->setFloat("spotLight.cutOff", cutOff);
 	shader->setFloat("spotLight.outerCutOff", outerCutOff);
 	shader->setFloat("spotLight.constant", constant);

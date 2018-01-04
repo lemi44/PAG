@@ -4,7 +4,7 @@
 #include <assimp/postprocess.h>
 #include "Logger.h"
 
-void Model::draw(Shader* shader, const Transform wvp, const Transform model)
+void Model::draw(Shader* shader, const Transform wvp, const Transform model, const bool gui)
 {
 	setWorld(model.translate(pos).rotate(rot).scale(scale));
 	/* Get uniform location and send MVP matrix there */
@@ -14,7 +14,7 @@ void Model::draw(Shader* shader, const Transform wvp, const Transform model)
 	for (auto &m : meshes)
 		m.draw(shader);
 	for (auto &mdl : children)
-		mdl.draw(shader, wvp, world);
+		mdl.draw(shader, wvp, world, gui);
 }
 
 void Model::drawColor(Shader* shader, const Transform wvp) {
@@ -36,11 +36,6 @@ vector<Model>& Model::getChildren()
 	return children;
 }
 
-int Model::getID() const
-{
-	return id;
-}
-
 void Model::loadModel(string path)
 {
 	Assimp::Importer import;
@@ -58,8 +53,6 @@ void Model::loadModel(string path)
 
 void Model::processNode(aiNode *node, const aiScene *scene)
 {
-	static int sid = 1;
-	id = sid++;
 	aiVector3t<float> ai_scale;
 	aiQuaterniont<float> ai_quaterniont;
 	aiVector3t<float> ai_pos;
