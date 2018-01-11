@@ -618,7 +618,7 @@ void Core::loadContent(Shader* shader)
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
 	// first pass
-	//glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 	/* Clear the color buffer & depth buffer*/
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -632,11 +632,11 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
 	if (!drawColor_) skybox_.drawSkybox(cam_.getSkyboxMatrix());
 	// second pass
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	//glClear(GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	//postprocess_.render();
+	postprocess_.render();
 
 	if (showGui_)
 		ImGui::Render();
