@@ -21,7 +21,7 @@ public:
 	~Postprocess();
 	bool init(GLsizei width, GLsizei height, Shader* shader);
 	void update(const GLsizei width, const GLsizei height) const;
-	void render() const;
+	void render(float exposure) const;
 	GLuint getFramebuffer() const;
 	GLuint getTexColorBuffer() const;
 	GLuint getRbo() const;

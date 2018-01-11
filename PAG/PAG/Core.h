@@ -131,6 +131,7 @@ private:
 	GLfloat oldTime_;
 	GLfloat newTime_;
 	GLfloat gameTime_;
+	GLfloat exposure_;
 	double lastX_, lastY_;
 	bool firstMouse_, showGui_, drawColor_;
 	float intersection_distance;

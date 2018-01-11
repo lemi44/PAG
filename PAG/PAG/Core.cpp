@@ -35,7 +35,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 Core* Core::ref_ = nullptr;
 
 // ReSharper disable once CppPossiblyUninitializedMember
-Core::Core() : root_(GraphNode(nullptr)), firstMouse_(true), showGui_(false), drawColor_(false)
+Core::Core() : root_(GraphNode(nullptr)), firstMouse_(true), showGui_(false), drawColor_(false), exposure_(1.0f)
 {
 	pressedKeys_[GLFW_KEY_F1] = false;
 	ref_ = this;
@@ -116,7 +116,6 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 
 	auto show_test_window = true;
 	auto show_another_window = false;
-	auto clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
@@ -128,6 +127,7 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 			{
 				glm::vec3 pos = cam_.getCameraPos();
 				ImGui::Text("X:%f, Y:%f, Z:%f", pos.x, pos.y, pos.z);
+				ImGui::SliderFloat("Exposure", &exposure_, 0.0f, 1.0f);
 				if (selectedDrawable_ != nullptr)
 				{
 					if(selectedDrawable_->isLight())
@@ -338,8 +338,8 @@ void Core::update(GLFWwindow* window)
 
 	}
 	nodes_.getNode(3)->setTransform(nodes_.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
-	lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
-	lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
+	//lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
+	//lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
 	//nodes_.getNode(1)->setTransform(nodes_.getNode(1)->getTransform().rotate(glm::vec3(0.0f, 0.0f, gameTime_)));
 }
 
@@ -618,7 +618,7 @@ void Core::loadContent(Shader* shader)
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
 	// first pass
-	glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
+	if (!drawColor_) glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 	/* Clear the color buffer & depth buffer*/
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -632,11 +632,13 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
 	if (!drawColor_) skybox_.drawSkybox(cam_.getSkyboxMatrix());
 	// second pass
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	postprocess_.render();
+	if (!drawColor_)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		postprocess_.render(exposure_);
+	}
 
 	if (showGui_)
 		ImGui::Render();

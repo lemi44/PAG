@@ -16,7 +16,7 @@ Postprocess::~Postprocess()
 void Postprocess::updateTexture(const GLsizei width, const GLsizei height) const
 {
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -64,9 +64,10 @@ void Postprocess::update(const GLsizei width, const GLsizei height) const
 	updateRenderObject(width, height);
 }
 
-void Postprocess::render() const
+void Postprocess::render(float exposure) const
 {
 	screenShader->use();
+	screenShader->setFloat("exposure", exposure);
 	glDisable(GL_DEPTH_TEST);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
