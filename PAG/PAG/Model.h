@@ -7,9 +7,7 @@
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include "Transform.h"
-#include "Material.h"
 #include "Drawable.h"
-
 
 using namespace std;
 

@@ -162,6 +162,7 @@
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="Drawable.cpp" />
+    <ClCompile Include="Postprocess.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphNode.cpp" />
     <ClCompile Include="GUI.cpp" />
@@ -176,6 +177,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Skybox.cpp" />
     <ClCompile Include="SpotLight.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -189,6 +191,7 @@
     <ClInclude Include="Core.h" />
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="Drawable.h" />
+    <ClInclude Include="Postprocess.h" />
     <ClInclude Include="GraphNode.h" />
     <ClInclude Include="GUI.h" />
     <ClInclude Include="imconfig.h" />
@@ -201,6 +204,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Skybox.h" />
     <ClInclude Include="SpotLight.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_rect_pack.h" />
@@ -215,6 +219,10 @@
     <None Include="Shaders\basic.vert" />
     <None Include="Shaders\line.frag" />
     <None Include="Shaders\line.vert" />
+    <None Include="Shaders\quad.frag" />
+    <None Include="Shaders\quad.vert" />
+    <None Include="Shaders\skybox.frag" />
+    <None Include="Shaders\skybox.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,6 @@
-PAG5_1
-MDL:Assets/plane.fbx:::1.0
+PAG6_1
+MDL:Assets/hierarchy.fbx:4.0,0.0,0.0:0.0:1.0
 DIL:0.2:0.05:0.4:0.5
 POL:0.05:0.8:1.0:3.0,2.0,3.0:1.0:0.9:0.032
 SPL:0.0:1.0:1.0:-3.0,2.0,-3.0:-0.639602,0.426401,-0.639602:12.5:15.0:1.0:0.9:0.032
+SKY:Assets/hw_red/red_rt.tga:Assets/hw_red/red_lf.tga:Assets/hw_red/red_up.tga:Assets/hw_red/red_dn.tga:Assets/hw_red/red_bk.tga:Assets/hw_red/red_ft.tga

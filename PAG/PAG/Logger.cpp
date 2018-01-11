@@ -1,7 +1,6 @@
 #include "Logger.h"
 #include <chrono>
 #include <ctime>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #ifdef _DEBUG
@@ -11,6 +10,7 @@
 #endif
 std::string Logger::filename = "";
 level Logger::current_level = LOG_DEFAULT_LEVEL;
+std::ofstream Logger::log_file;
 
 Logger::~Logger()
 {

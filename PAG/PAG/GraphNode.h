@@ -1,7 +1,6 @@
 #pragma once
 #include "Transform.h"
 #include "Shader.h"
-#include "Texture.h"
 #include "Model.h"
 
 class GraphNode

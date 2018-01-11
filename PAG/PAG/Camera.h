@@ -12,6 +12,7 @@ public:
 	glm::vec3 getCameraPos() const;
 	glm::vec3 getCameraFront() const;
 	glm::vec3 getCameraUp() const;
+	glm::mat4 getSkyboxMatrix() const;
 	bool getCameraChanged() const;
 	double getPitch() const;
 	double getYaw() const;
@@ -26,6 +27,9 @@ public:
 	
 	~Camera();
 private:
+	glm::mat4 const world;
+	glm::mat4 view;
+	glm::mat4 projection;
 	glm::vec3 cameraPos_;
 	glm::vec3 cameraUp_;
 	glm::vec3 cameraFront_;

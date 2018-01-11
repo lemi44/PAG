@@ -4,6 +4,8 @@
 #include "Camera.h"
 #include <map>
 #include "BaseLight.h"
+#include "Postprocess.h"
+#include "Skybox.h"
 
 struct ModelStorage
 {
@@ -122,6 +124,8 @@ class Core
 {
 private:
 	GraphNode root_;
+	Postprocess postprocess_;
+	Skybox skybox_;
 	Transform wvp_;
 	Camera cam_;
 	GLfloat oldTime_;

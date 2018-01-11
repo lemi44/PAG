@@ -59,7 +59,7 @@ int Core::init(int const width, int const height)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 	Window win;
-	win.init(width, height, "Zadanie 4");
+	win.init(width, height, "Zadanie 6");
 	glfwSwapInterval(1); // Enable vsync
 
 
@@ -72,6 +72,10 @@ int Core::init(int const width, int const height)
 	ImGui_ImplGlfwGL3_Init(win.get(), true);
 	Shader sha;
 	Shader line_sha("Shaders/line.vert", "Shaders/line.frag");
+	Shader quad_sha("Shaders/quad.vert", "Shaders/quad.frag");
+	Shader skybox_sha("Shaders/skybox.vert", "Shaders/skybox.frag");
+	postprocess_.init(width, height, &quad_sha);
+	skybox_.init(&skybox_sha);
 	/* Apply shader */
 	sha.use();
 	loadContent(&sha);
@@ -353,7 +357,7 @@ void Core::loadContent(Shader* shader)
 	//Assert version
 	getline(content_manifest_file, line);
 	count++;
-	if (line != "PAG5_1")
+	if (line != "PAG6_1")
 	{
 		Logger::logError(string_format("File level.map is not supported! Line:%d", count));
 		content_manifest_file.close();
@@ -583,6 +587,24 @@ void Core::loadContent(Shader* shader)
 			root_.addChild(nodes_.getAllNodes().back());
 			lights_.getAllLights().back()->setupShader(shader);
 		}
+		else if (x[0] == "SKY")
+		{
+			// Assert size 7
+			if (x.size() != 7)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return;
+			}
+
+			vector<std::string> faces;
+			for (auto i = 1; i < 7; i++)
+			{
+				faces.push_back(x[i]);
+			}
+			skybox_.loadCubemap(faces);
+		}
+		else if (x[0][0] == '#')continue;
 		else
 		{
 			Logger::logError(string_format("File level.map is not supported! Line:%d", count));
@@ -595,15 +617,27 @@ void Core::loadContent(Shader* shader)
 
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
+	// first pass
+	//glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 	/* Clear the color buffer & depth buffer*/
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	auto const wvp_changed = cam_.getCameraChanged();
 	if (wvp_changed)
 		wvp_.setMatrix(cam_.getWVPMatrix(window));
+	shader->use();
 	shader->setVec3("viewPos", cam_.getCameraPos());
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
+	if (!drawColor_) skybox_.drawSkybox(cam_.getSkyboxMatrix());
+	// second pass
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT);
+
+	//postprocess_.render();
+
 	if (showGui_)
 		ImGui::Render();
 }
@@ -611,6 +645,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 void Core::windowSizeCallback(GLFWwindow * window, int const width, int const height)
 {
 	glViewport(0, 0, width, height);
+	ref_->postprocess_.update(width, height);
 }
 
 void Core::mouseCallback(GLFWwindow * window, double const xpos, double const ypos)

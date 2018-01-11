@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
 #include <memory>
-#include <iostream>
-#include <string>
+#include <fstream>
 #include <cstdio>
 
 template<typename ... Args>

@@ -93,6 +93,12 @@
     <ClCompile Include="Drawable.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="Postprocess.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -170,6 +176,12 @@
     <ClInclude Include="Drawable.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="Postprocess.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\line.frag">
@@ -182,6 +194,18 @@
       <Filter>Pliki shaderów</Filter>
     </None>
     <None Include="Shaders\basic.vert">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\quad.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\quad.vert">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\skybox.vert">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\skybox.frag">
       <Filter>Pliki shaderów</Filter>
     </None>
   </ItemGroup>

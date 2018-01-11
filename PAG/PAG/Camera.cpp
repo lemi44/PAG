@@ -2,7 +2,7 @@
 #include <glm/gtc/matrix_transform.inl>
 
 
-Camera::Camera() : changed_(true), fov_(glm::radians(45.f))
+Camera::Camera() : changed_(true), fov_(glm::radians(45.f)), world(1.0f)
 {
 	cameraPos_ = glm::vec3(1.5f, 1.f, 1.5f);
 	cameraUp_ = glm::vec3(0.f, 1.f, 0.f);
@@ -13,19 +13,22 @@ glm::mat4 Camera::getWVPMatrix(GLFWwindow* window)
 {
 	if (changed_)
 	{
-		/* Set world matrix to identity matrix */
-		glm::mat4 const world(1.0f);
 		/* Set view matrix */
-		const auto view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
+		view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
 		int w;
 		int h;
 		glfwGetWindowSize(window, &w, &h);
-		const auto projection = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
+		projection = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
 		/* Set MVP matrix */
 		wvp_ = projection * view * world;
 		changed_ = false;
 	}
 	return wvp_;
+}
+
+glm::mat4 Camera::getSkyboxMatrix() const
+{
+	return projection * glm::mat4(glm::mat3(view));
 }
 
 glm::vec3 Camera::getCameraPos() const

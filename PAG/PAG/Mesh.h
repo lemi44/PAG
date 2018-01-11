@@ -3,7 +3,6 @@
 #include <glm/detail/type_vec3.hpp>
 #include <glm/detail/type_vec2.hpp>
 #include "Shader.h"
-#include "Texture.h"
 #include "Material.h"
 
 using namespace std;
