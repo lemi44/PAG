@@ -1,6 +1,12 @@
+#Header - must be PAG6_1
 PAG6_1
-MDL:Assets/hierarchy.fbx:4.0,0.0,0.0:0.0:1.0
+#Model - MDL:filename:pos(x,y,z):rot(x,y,z):scale(x,y,z)
+MDL:Assets/Computer Desk.FBX::0.0:0.1
+#Directional Light - DIL:ambient:diffuse:specular:direction
 DIL:0.2:0.05:0.4:0.5
+#Point Light - POL:ambient:diffuse:specular:position:constant:linear:quadratic
 POL:0.05:0.8:1.0:3.0,2.0,3.0:1.0:0.9:0.032
+#Spot Light - SPL:ambient:diffuse:specular:position:direction:cutOff:outerCutOff:constant:linear:quadratic
 SPL:0.0:1.0:1.0:-3.0,2.0,-3.0:-0.639602,0.426401,-0.639602:12.5:15.0:1.0:0.9:0.032
+#Skybox - SKY:right:left:top:bottom:back:front
 SKY:Assets/hw_red/red_rt.tga:Assets/hw_red/red_lf.tga:Assets/hw_red/red_up.tga:Assets/hw_red/red_dn.tga:Assets/hw_red/red_bk.tga:Assets/hw_red/red_ft.tga

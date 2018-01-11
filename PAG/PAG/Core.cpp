@@ -355,8 +355,11 @@ void Core::loadContent(Shader* shader)
 		return;
 	}
 	//Assert version
-	getline(content_manifest_file, line);
-	count++;
+	do
+	{
+		getline(content_manifest_file, line);
+		count++;
+	} while (line.find('#') != std::string::npos);
 	if (line != "PAG6_1")
 	{
 		Logger::logError(string_format("File level.map is not supported! Line:%d", count));
@@ -367,6 +370,7 @@ void Core::loadContent(Shader* shader)
 	{
 		getline(content_manifest_file, line);
 		count++;
+		if (line[0] == '#') continue;
 		auto x = split(line, ':');
 		if (x[0] == "MDL")
 		{
@@ -604,7 +608,6 @@ void Core::loadContent(Shader* shader)
 			}
 			skybox_.loadCubemap(faces);
 		}
-		else if (x[0][0] == '#')continue;
 		else
 		{
 			Logger::logError(string_format("File level.map is not supported! Line:%d", count));
