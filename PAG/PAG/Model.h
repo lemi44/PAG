@@ -50,5 +50,5 @@ private:
 	void updateNormalMatrix();
 	void setWorld(const Transform& world);
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
-		std::string typeName);
+		std::string typeName, const aiScene *scene);
 };

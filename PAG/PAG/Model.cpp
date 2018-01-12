@@ -134,11 +134,12 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	if (mesh->mMaterialIndex >= 0)
 	{
 		const auto ai_material = scene->mMaterials[mesh->mMaterialIndex];
+		
 		auto diffuse_maps = loadMaterialTextures(ai_material,
-			aiTextureType_DIFFUSE, "texture_diffuse");
+			aiTextureType_DIFFUSE, "texture_diffuse", scene);
 		material.textures.insert(material.textures.end(), diffuse_maps.begin(), diffuse_maps.end());
 		auto specular_maps = loadMaterialTextures(ai_material,
-			aiTextureType_SPECULAR, "texture_specular");
+			aiTextureType_SPECULAR, "texture_specular", scene);
 		material.textures.insert(material.textures.end(), specular_maps.begin(), specular_maps.end());
 		ai_material->Get(AI_MATKEY_SHININESS, material.shininess);
 	}
@@ -157,7 +158,7 @@ void Model::setWorld(const Transform& world)
 	updateNormalMatrix();
 }
 
-vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType type, const string typeName)
+vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType type, const string typeName, const aiScene *scene)
 {
 	vector<Texture> textures;
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -177,7 +178,19 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType
 		if (!skip)
 		{   // if texture hasn't been loaded already, load it
 			Texture texture;
-			if (texture.loadTexture(str.C_Str(), directory))
+			// check if texture is embedded
+			if(str.data[0] == '*')
+			{
+				const size_t idx = atoi(str.C_Str()+1);
+				if(texture.loadTexture(scene->mTextures[idx]))
+				{
+					texture.type = typeName;
+					texture.path = str.C_Str();
+					textures.push_back(texture);
+					textures_loaded.push_back(texture); // add to loaded 
+				}
+			}
+			else if (texture.loadTexture(str.C_Str(), directory))
 			{
 				texture.type = typeName;
 				texture.path = str.C_Str();

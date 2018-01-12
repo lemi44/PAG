@@ -3,6 +3,7 @@
 #include <iostream>
 #include "stb_image.h"
 #include <assimp/types.h>
+#include <assimp/texture.h>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ public:
 	string path;
 	Texture();
 	bool loadTexture(const char* path, string directory);
+	bool loadTexture(aiTexture *texture);
 	void white();
 	static void activate(GLuint id);
 	~Texture();
