@@ -11,9 +11,9 @@ struct QuadVertex
 class Postprocess
 {
 private:
-	GLuint framebuffer, pingpongFBO[2];
-	GLuint texColorBuffer, pingpongColorBuffer[2];
-	GLuint rbo, pingpongRBO[2];
+	GLuint framebuffer, averageFBO;
+	GLuint texColorBuffer, averageColorBuffer;
+	GLuint rbo, averageRBO;
 	GLsizei width, height;
 	Shader *screenShader, *averageShader;
 	void updateTexture(const GLsizei width, const GLsizei height);

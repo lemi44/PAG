@@ -58,31 +58,28 @@ bool Postprocess::init(const GLsizei width, const GLsizei height, Shader* screen
 		Logger::logError("Framebuffer is not complete!");
 		success = false;
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glGenFramebuffers(2, &pingpongFBO[0]);
+	glGenFramebuffers(1, &averageFBO);
 	// generate texture
-	glGenTextures(2, &pingpongColorBuffer[0]);
-	glGenRenderbuffers(2, &pingpongRBO[0]);
-	
-	for (GLuint i = 0; i < 2; i++)
+	glGenTextures(1, &averageColorBuffer);
+	glGenRenderbuffers(1, &averageRBO);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, averageFBO);
+	// Reset color buffer dimensions
+	glBindTexture(GL_TEXTURE_2D, averageColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+	// attach it to currently bound framebuffer object
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, averageColorBuffer, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, averageRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, averageRBO);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
-		// Reset color buffer dimensions
-		glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-		// attach it to currently bound framebuffer object
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorBuffer[i], 0);
-		glBindRenderbuffer(GL_RENDERBUFFER, pingpongRBO[i]);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pingpongRBO[i]);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			Logger::logError("Framebuffer is not complete!");
-			success = false;
-		}
+		Logger::logError("Framebuffer is not complete!");
+		success = false;
 	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	screenShader = screen;
@@ -99,14 +96,10 @@ void Postprocess::update(const GLsizei width, const GLsizei height)
 
 void Postprocess::render(float exposure) const
 {
-	for (GLuint i = 0; i < 2; i++)
-	{
-		// Reset color buffer dimensions
-		glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-	}
+	glBindTexture(GL_TEXTURE_2D, averageColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[0]);
+	glBindFramebuffer(GL_FRAMEBUFFER, averageFBO);
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	screenShader->use();
@@ -125,30 +118,30 @@ float Postprocess::findAverage(float prevExposure)
 	GLuint texWidth = width, texHeight = height;
 	GLboolean change = true;
 	averageShader->use();
-
-	// Then pingpong between color buffers creating a smaller texture every time
-	while (texWidth > 1)
-	{
-		// first change texture size
-		glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[change ? 1 : 0]);
-		texWidth = texWidth / 2;
-		texHeight = texHeight / 2;
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth > 1 ? texWidth : 1, texHeight > 1 ? texHeight : 1, 0, GL_RGB, GL_FLOAT, NULL);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[change ? 1 : 0]);
-		glViewport(0, 0, texWidth, texHeight);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[change ? 0 : 1]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		change = !change;
-	}
-
-	// Once done read the luminescence value of 1x1 texture
 	GLfloat luminescence[3];
-	glReadPixels(0, 0, 1, 1, GL_RGB, GL_FLOAT, &luminescence);
+
+	glBindTexture(GL_TEXTURE_2D, averageColorBuffer);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	int max_level;
+
+	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, &max_level);
+	int max_mipmap = -1;
+	for (int i = 0; i < max_level; ++i)
+	{
+		int width;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, i, GL_TEXTURE_WIDTH, &width);
+		if (0 == width)
+		{
+			max_mipmap = i - 1;
+			break;
+		}
+	}
+	// Once done read the luminescence value of 1x1 texture
+	glGetTexImage(GL_TEXTURE_2D, max_mipmap, GL_RGB, GL_FLOAT, &luminescence[0]);
+
 	GLfloat lum = 0.2126 * luminescence[0] + 0.7152 * luminescence[1] + 0.0722 * luminescence[2];
 	auto ret = lerp(prevExposure, 0.5 / lum, 0.05); // slowly adjust exposure based on average brightness
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return ret;
 }
