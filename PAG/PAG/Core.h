@@ -133,7 +133,7 @@ private:
 	GLfloat gameTime_;
 	GLfloat exposure_;
 	double lastX_, lastY_;
-	bool firstMouse_, showGui_, drawColor_;
+	bool firstMouse_, showGui_, drawColor_, firstFrame_;
 	float intersection_distance;
 	std::map<int, bool> pressedKeys_;
 	ModelStorage models_;

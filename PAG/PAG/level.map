@@ -1,7 +1,7 @@
 #Header - must be PAG6_1
 PAG6_1
 #Model - MDL:filename:pos(x,y,z):rot(x,y,z):scale(x,y,z)
-MDL:Assets/source/scene.fbx::0.0:0.1
+MDL:Assets/treeplan1.fbx::0.0:0.1
 #Directional Light - DIL:ambient:diffuse:specular:direction
 DIL:0.2:0.05:0.4:0.5
 #Point Light - POL:ambient:diffuse:specular:position:constant:linear:quadratic

@@ -208,5 +208,8 @@
     <None Include="Shaders\skybox.frag">
       <Filter>Pliki shaderów</Filter>
     </None>
+    <None Include="Shaders\hdr.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
   </ItemGroup>
 </Project>

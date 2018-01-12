@@ -217,6 +217,7 @@
   <ItemGroup>
     <None Include="Shaders\basic.frag" />
     <None Include="Shaders\basic.vert" />
+    <None Include="Shaders\hdr.frag" />
     <None Include="Shaders\line.frag" />
     <None Include="Shaders\line.vert" />
     <None Include="Shaders\quad.frag" />

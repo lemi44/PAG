@@ -31,11 +31,10 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	return elems;
 }
 
-
 Core* Core::ref_ = nullptr;
 
 // ReSharper disable once CppPossiblyUninitializedMember
-Core::Core() : root_(GraphNode(nullptr)), firstMouse_(true), showGui_(false), drawColor_(false), exposure_(1.0f)
+Core::Core() : root_(GraphNode(nullptr)), firstMouse_(true), showGui_(false), drawColor_(false), exposure_(1.0f), firstFrame_(true)
 {
 	pressedKeys_[GLFW_KEY_F1] = false;
 	ref_ = this;
@@ -73,8 +72,9 @@ int Core::init(int const width, int const height)
 	Shader sha;
 	Shader line_sha("Shaders/line.vert", "Shaders/line.frag");
 	Shader quad_sha("Shaders/quad.vert", "Shaders/quad.frag");
+	Shader hdr_sha("Shaders/quad.vert", "Shaders/hdr.frag");
 	Shader skybox_sha("Shaders/skybox.vert", "Shaders/skybox.frag");
-	postprocess_.init(width, height, &quad_sha);
+	postprocess_.init(width, height, &hdr_sha, &quad_sha);
 	skybox_.init(&skybox_sha);
 	/* Apply shader */
 	sha.use();
@@ -620,6 +620,13 @@ void Core::loadContent(Shader* shader)
 
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
+	if (!firstFrame_)
+	{
+		exposure_ = postprocess_.findAverage(exposure_);
+	}
+	else
+		firstFrame_ = false;
+
 	// first pass
 	if (!drawColor_) glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 	/* Clear the color buffer & depth buffer*/
@@ -637,9 +644,6 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	// second pass
 	if (!drawColor_)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
 		postprocess_.render(exposure_);
 	}
 
