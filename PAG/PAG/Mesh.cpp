@@ -1,7 +1,6 @@
 #include "Mesh.h"
 #include "Logger.h"
 
-
 void Mesh::setupMesh()
 {
 	glGenVertexArrays(1, &VAO);
@@ -76,6 +75,7 @@ void Mesh::draw(Shader* shader)
 			glBindTexture(GL_TEXTURE_2D, material.textures[0].id);
 		}
 	}
+	shader->setFloat("material.shininess", max(material.shininess, 0.0f));
 	glActiveTexture(GL_TEXTURE0);
 
 	if (outline)
