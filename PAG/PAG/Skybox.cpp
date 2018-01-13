@@ -69,7 +69,14 @@ void Skybox::init(Shader* shader)
 
 	glBindVertexArray(0);
 
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
 	this->shader = shader;
+}
+
+GLuint Skybox::getSkybox() const
+{
+	return cubemapTexture;
 }
 
 Skybox::~Skybox()

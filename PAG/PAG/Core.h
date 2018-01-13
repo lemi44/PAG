@@ -120,6 +120,13 @@ public:
 	}
 };
 
+struct Options
+{
+	bool reflections = true;
+	bool refractions = false;
+	float refractive_index = 1.52f;
+};
+
 class Core
 {
 private:
@@ -140,6 +147,7 @@ private:
 	Drawable* selectedDrawable_;
 	NodeStorage nodes_;
 	LightStorage lights_;
+	Options options_;
 	static void windowSizeCallback(GLFWwindow* window, int width, int height);
 	void render(float tpf, GLFWwindow* window, Shader* shader);
 	void update(GLFWwindow* window);

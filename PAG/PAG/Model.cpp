@@ -39,7 +39,7 @@ vector<Model>& Model::getChildren()
 void Model::loadModel(string path)
 {
 	Assimp::Importer import;
-	const auto scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const auto scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -121,6 +121,14 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 		}
 		else
 			vertex.tex_coords = glm::vec2(0.0f, 0.0f);
+		vector.x = mesh->mTangents[i].x;
+		vector.y = mesh->mTangents[i].y;
+		vector.z = mesh->mTangents[i].z;
+		vertex.tangent = vector;
+		vector.x = mesh->mBitangents[i].x;
+		vector.y = mesh->mBitangents[i].y;
+		vector.z = mesh->mBitangents[i].z;
+		vertex.bitangent = vector;
 		vertices.push_back(vertex);
 	}
 	// process indices
@@ -141,6 +149,12 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 		auto specular_maps = loadMaterialTextures(ai_material,
 			aiTextureType_SPECULAR, "texture_specular", scene);
 		material.textures.insert(material.textures.end(), specular_maps.begin(), specular_maps.end());
+		auto normal_maps = loadMaterialTextures(ai_material,
+			aiTextureType_HEIGHT, "texture_normal", scene);
+		material.textures.insert(material.textures.end(), normal_maps.begin(), normal_maps.end());
+		auto height_maps = loadMaterialTextures(ai_material,
+			aiTextureType_AMBIENT, "texture_height", scene);
+		material.textures.insert(material.textures.end(), height_maps.begin(), height_maps.end());
 		ai_material->Get(AI_MATKEY_SHININESS, material.shininess);
 	}
 

@@ -128,6 +128,9 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 				glm::vec3 pos = cam_.getCameraPos();
 				ImGui::Text("X:%f, Y:%f, Z:%f", pos.x, pos.y, pos.z);
 				ImGui::SliderFloat("Exposure", &exposure_, 0.0f, 1.0f);
+				ImGui::Checkbox("Reflections", &options_.reflections);
+				ImGui::Checkbox("Refractions", &options_.refractions);
+				ImGui::SliderFloat("Refractive Index", &options_.refractive_index, 0.0f, 3.0f);
 				if (selectedDrawable_ != nullptr)
 				{
 					if(selectedDrawable_->isLight())
@@ -638,6 +641,12 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	if (wvp_changed)
 		wvp_.setMatrix(cam_.getWVPMatrix(window));
 	shader->use();
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_.getSkybox());
+	shader->setInt("skybox", 10);
+	shader->setBool("reflection", options_.reflections);
+	shader->setBool("refraction", options_.refractions);
+	shader->setFloat("refractiveIndex", options_.refractive_index);
 	shader->setVec3("viewPos", cam_.getCameraPos());
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
 	if (!drawColor_) skybox_.drawSkybox(cam_.getSkyboxMatrix());

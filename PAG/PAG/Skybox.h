@@ -16,5 +16,6 @@ public:
 	void drawSkybox(glm::mat4 const wvp);
 	~Skybox();
 	void init(Shader* shader);
+	GLuint getSkybox() const;
 };
 

@@ -26,6 +26,12 @@ void Mesh::setupMesh()
 	// vertex texture coords
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, tex_coords)));
+	// vertex tangent
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, tangent)));
+	// vertex bitangent
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, bitangent)));
 
 	glBindVertexArray(0);
 }
@@ -43,6 +49,8 @@ void Mesh::draw(Shader* shader)
 {
 	auto diffuse_n = 0;
 	auto specular_n = 0;
+	auto normal_n = 0;
+	auto height_n = 0;
 	for (unsigned int i = 0; i < material.textures.size(); i++)
 	{
 		auto number = -1;
@@ -51,6 +59,10 @@ void Mesh::draw(Shader* shader)
 			number = ++diffuse_n;
 		else if (name == "texture_specular")
 			number = ++specular_n;
+		else if (name == "texture_normal")
+			number = ++normal_n;
+		else if (name == "texture_height")
+			number = ++height_n;
 
 		if (number != 1)
 		{
