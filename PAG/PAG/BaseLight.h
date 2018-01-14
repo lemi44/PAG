@@ -14,14 +14,14 @@ class BaseLight : public Drawable
 protected:
 	std::vector<Vertex> helperMeshVertices_ =
 	{
-		Vertex(glm::vec3(-1.0, -1.0, 1.0)),
-		Vertex(glm::vec3(1.0, -1.0, 1.0)),
-		Vertex(glm::vec3(1.0, 1.0, 1.0)),
-		Vertex(glm::vec3(-1.0, 1.0, 1.0)),
-		Vertex(glm::vec3(-1.0, -1.0, -1.0)),
-		Vertex(glm::vec3(1.0, -1.0, -1.0)),
-		Vertex(glm::vec3(1.0, 1.0, -1.0)),
-		Vertex(glm::vec3(-1.0, 1.0, -1.0))
+		Vertex(glm::vec3(-0.1, -0.1, 0.1)),
+		Vertex(glm::vec3(0.1, -0.1, 0.1)),
+		Vertex(glm::vec3(0.1, 0.1, 0.1)),
+		Vertex(glm::vec3(-0.1, 0.1, 0.1)),
+		Vertex(glm::vec3(-0.1, -0.1, -0.1)),
+		Vertex(glm::vec3(0.1, -0.1, -0.1)),
+		Vertex(glm::vec3(0.1, 0.1, -0.1)),
+		Vertex(glm::vec3(-0.1, 0.1, -0.1))
 	};
 	std::vector<unsigned int> helperMeshIndices_ = { 0, 1, 2, 0, 2, 3, //front
 		4, 7, 6, 4, 6, 5, //back

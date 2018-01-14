@@ -5,7 +5,7 @@ MDL:Assets/nanosuit/nanosuit.obj::0.0:0.1
 #Directional Light - DIL:ambient:diffuse:specular:direction
 DIL:0.2:0.05:0.4:0.5
 #Point Light - POL:ambient:diffuse:specular:position:constant:linear:quadratic
-POL:0.05:0.8:1.0:3.0,2.0,3.0:1.0:0.9:0.032
+POL:0.05:0.8:1.0:1.0,1.0,1.0:1.0:0.9:0.032
 #Spot Light - SPL:ambient:diffuse:specular:position:direction:cutOff:outerCutOff:constant:linear:quadratic
 SPL:0.0:1.0:1.0:-3.0,2.0,-3.0:-0.639602,0.426401,-0.639602:12.5:15.0:1.0:0.9:0.032
 #Skybox - SKY:right:left:top:bottom:back:front

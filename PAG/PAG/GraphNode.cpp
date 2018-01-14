@@ -19,7 +19,7 @@ void GraphNode::setTransform(Transform const local)
 	dirty_ = true;
 }
 
-void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, const bool gui, Shader* sha, Shader* line_shader)
+void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, const bool gui, const bool light_only, Shader* sha, Shader* line_shader)
 {
 	if (!sha) sha = shader_;
 	if (!line_shader) line_shader = line_shader_;
@@ -30,11 +30,13 @@ void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirt
 		dirty_ = false;
 	}
 
-	if (drawable_) renderDrawable(drawable_, wvp, world_, sha, line_shader, picking_color, gui);
+	if (drawable_)
+		if (light_only) renderLight(drawable_, wvp, world_, sha, line_shader, picking_color, gui);
+		else renderDrawable(drawable_, wvp, world_, sha, line_shader, picking_color, gui);
 
 	for (auto child : children)
 	{
-		child->render(wvp, world_, dirty, picking_color, gui, sha, line_shader);
+		child->render(wvp, world_, dirty, picking_color, gui, light_only, sha, line_shader);
 	}
 }
 
@@ -74,13 +76,26 @@ void GraphNode::renderDrawable(Drawable * drawable, const Transform wvp, const T
 	}
 	else
 	{
+		if (!drawable->isLight())
+			drawable->draw(sha, wvp, model_mat, gui);
+	}
+}
+void GraphNode::renderLight(Drawable * drawable, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
+{
+
+	if (picking_color)
+	{
+		line_shader->use();
+		drawable->drawColor(line_shader, wvp);
+		sha->use();
+	}
+	else
+	{
 		if (gui && drawable->isLight())
 		{
 			line_shader->use();
 			drawable->draw(line_shader, wvp, model_mat, gui);
 			sha->use();
 		}
-		else
-			drawable->draw(sha, wvp, model_mat, gui);
 	}
 }

@@ -99,6 +99,15 @@
     <ClCompile Include="Skybox.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="Deferred.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="Storage.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="FullscreenQuad.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -182,6 +191,15 @@
     <ClInclude Include="Skybox.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="Deferred.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Storage.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="FullscreenQuad.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\line.frag">
@@ -209,6 +227,9 @@
       <Filter>Pliki shaderów</Filter>
     </None>
     <None Include="Shaders\hdr.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\gbuffer.frag">
       <Filter>Pliki shaderów</Filter>
     </None>
   </ItemGroup>

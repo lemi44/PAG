@@ -4,7 +4,7 @@
 
 Camera::Camera() : changed_(true), fov_(glm::radians(45.f)), world(1.0f)
 {
-	cameraPos_ = glm::vec3(1.5f, 1.f, 1.5f);
+	cameraPos_ = glm::vec3(0.0f, 1.f, 2.0f);
 	cameraUp_ = glm::vec3(0.f, 1.f, 0.f);
 	cameraFront_ = glm::vec3(0.f, 0.f, -1.f);
 }

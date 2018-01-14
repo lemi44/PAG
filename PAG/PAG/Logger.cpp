@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <sstream>
+#include <glad/glad.h>
 #ifdef _DEBUG
 #define LOG_DEFAULT_LEVEL debug
 #else
@@ -78,4 +79,24 @@ void Logger::log(const std::string text, const level level)
 void Logger::setCurrentLevel(const level level)
 {
 	current_level = level;
+}
+
+GLenum glCheckError_(const char *file, int line)
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		std::string FILE = file;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		Logger::logError(error + " | " + file + " (" + std::to_string(line) + ")");
+	}
+	return errorCode;
 }

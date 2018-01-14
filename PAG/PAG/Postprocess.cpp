@@ -1,6 +1,7 @@
 #include "Postprocess.h"
 #include "Logger.h"
 #include <vector>
+#include "FullscreenQuad.h"
 
 
 float lerp(float a, float b, float f)
@@ -107,10 +108,10 @@ void Postprocess::render(float exposure) const
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	screenShader->setFloat("exposure", exposure);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	FullscreenQuad::renderQuad();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	FullscreenQuad::renderQuad();
 }
 
 float Postprocess::findAverage(float prevExposure)

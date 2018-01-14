@@ -9,7 +9,7 @@ public:
 	GraphNode(Drawable* model);
 	~GraphNode();
 	
-	void render(Transform wvp, Transform model, bool dirty, bool picking_color, bool gui, Shader* sha = NULL, Shader* line_shader = NULL);
+	void render(Transform wvp, Transform model, bool dirty, bool picking_color, bool gui, bool light_only = false, Shader* sha = NULL, Shader* line_shader = NULL);
 	void addChild(GraphNode* node);
 	Drawable* getDrawable() const;
 	Transform getTransform() const;
@@ -26,5 +26,6 @@ private:
 	Shader* shader_;
 	Shader* line_shader_;
 	void renderDrawable(Drawable* drawable, Transform wvp, Transform model_mat, Shader* sha, Shader* line_shader, bool picking_color, const bool gui) const;
+	void renderLight(Drawable * drawable, const Transform wvp, const Transform model_mat, Shader * sha, Shader * line_shader, const bool picking_color, const bool gui) const;
 };
 

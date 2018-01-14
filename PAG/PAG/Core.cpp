@@ -2,8 +2,6 @@
 #include "Shader.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <sstream>
-#include <fstream>
 #include <GLFW/glfw3.h>
 #include "Window.h"
 #include "imgui_impl_glfw_gl3.h"
@@ -12,24 +10,7 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
-#include <string>
-#include <vector>
-#include <iterator>
-
-template<typename Out>
-void split(const std::string &s, char delim, Out result) {
-	std::stringstream ss(s);
-	std::string item;
-	while (std::getline(ss, item, delim)) {
-		*(result++) = item;
-	}
-}
-
-std::vector<std::string> split(const std::string &s, char delim) {
-	std::vector<std::string> elems;
-	split(s, delim, std::back_inserter(elems));
-	return elems;
-}
+#include "FullscreenQuad.h"
 
 Core* Core::ref_ = nullptr;
 
@@ -62,24 +43,27 @@ int Core::init(int const width, int const height)
 	glfwSwapInterval(1); // Enable vsync
 
 
-	/* Initialize GLEW */
+						 /* Initialize GLEW */
 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
 	{
 		Logger::logError("Failed to initialize GLAD");
 		return -1;
 	}
 	ImGui_ImplGlfwGL3_Init(win.get(), true);
-	Shader sha;
+	Shader light_sha("Shaders/quad.vert", "Shaders/basic.frag");
 	Shader line_sha("Shaders/line.vert", "Shaders/line.frag");
 	Shader quad_sha("Shaders/quad.vert", "Shaders/quad.frag");
 	Shader hdr_sha("Shaders/quad.vert", "Shaders/hdr.frag");
 	Shader skybox_sha("Shaders/skybox.vert", "Shaders/skybox.frag");
+	Shader gBuffer_sha("Shaders/basic.vert", "Shaders/gbuffer.frag");
 	postprocess_.init(width, height, &hdr_sha, &quad_sha);
-	skybox_.init(&skybox_sha);
+	storage_.skybox.init(&skybox_sha);
 	/* Apply shader */
-	sha.use();
-	loadContent(&sha);
-
+	light_sha.use();
+	if (!storage_.loadContent(&light_sha, &root_))
+		return 1;
+	deferred_.init(width, height);
+	deferred_.shader = &gBuffer_sha;
 	glfwSetInputMode(win.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glfwSetCursorPosCallback(win.get(), mouseCallback);
@@ -90,20 +74,20 @@ int Core::init(int const width, int const height)
 
 	/* Enable depth test */
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1, 0);
 	glLineWidth(2.f);
 
 	wvp_ = Transform(cam_.getWVPMatrix(win.get()));
-	root_.setShader(&sha);
+	root_.setShader(&gBuffer_sha);
 	root_.setLineShader(&line_sha);
 
 
 
-	mainloop(win.get(), &sha);
+	mainloop(win.get(), &light_sha);
 
 	return 0;
 }
@@ -128,12 +112,12 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 				glm::vec3 pos = cam_.getCameraPos();
 				ImGui::Text("X:%f, Y:%f, Z:%f", pos.x, pos.y, pos.z);
 				ImGui::SliderFloat("Exposure", &exposure_, 0.0f, 1.0f);
-				ImGui::Checkbox("Reflections", &options_.reflections);
-				ImGui::Checkbox("Refractions", &options_.refractions);
-				ImGui::SliderFloat("Refractive Index", &options_.refractive_index, 0.0f, 3.0f);
+				ImGui::Checkbox("Reflections", &storage_.options.reflections);
+				ImGui::Checkbox("Refractions", &storage_.options.refractions);
+				ImGui::SliderFloat("Refractive Index", &storage_.options.refractive_index, 0.0f, 3.0f);
 				if (selectedDrawable_ != nullptr)
 				{
-					if(selectedDrawable_->isLight())
+					if (selectedDrawable_->isLight())
 					{
 						// TODO: do light manipulation here
 						ImGui::Text("Selected light with id:%d", selectedDrawable_->getID());
@@ -141,20 +125,20 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 						ImGui::ColorEdit3("Ambient", reinterpret_cast<float*>(&light->ambient));
 						ImGui::ColorEdit3("Diffuse", reinterpret_cast<float*>(&light->diffuse));
 						ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&light->specular));
-						switch(light->getType())
+						switch (light->getType())
 						{
 						case directional:
 						{DirectionalLight * dir = static_cast<DirectionalLight*>(light);
 						ImGui::SliderFloat3("Direction", reinterpret_cast<float*>(&dir->local_direction), -1.f, 1.f);
 						}
-							break;
+						break;
 						case point:
 						{PointLight * pt = static_cast<PointLight*>(light);
 						ImGui::SliderFloat3("Position", reinterpret_cast<float*>(&pt->local_position), -50.f, 50.f);
 						ImGui::SliderFloat("Constant", &pt->constant, 0.0f, 1.0f);
 						ImGui::SliderFloat("Linear", &pt->linear, 0.0f, 1.0f);
 						ImGui::SliderFloat("Quadratic", &pt->quadratic, 0.0f, 1.0f); }
-							break;
+						break;
 						case spot:
 						{SpotLight * sp = static_cast<SpotLight*>(light);
 						ImGui::SliderFloat3("Direction", reinterpret_cast<float*>(&sp->local_direction), -1.0f, 1.0f);
@@ -162,7 +146,7 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 						ImGui::SliderFloat("Constant", &sp->constant, 0.0f, 1.0f);
 						ImGui::SliderFloat("Linear", &sp->linear, 0.0f, 1.0f);
 						ImGui::SliderFloat("Quadratic", &sp->quadratic, 0.0f, 1.0f); }
-							break;
+						break;
 						}
 					}
 					else
@@ -185,7 +169,7 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			}
 
-			GUI::ShowPropertyEditor(&showGui_, models_.getAllModels());
+			GUI::ShowPropertyEditor(&showGui_, storage_.models.getAllModels());
 		}
 		//if imgui glfwSetScrollCallback(window, ImGui_ImplGlfwGL3_ScrollCallback);
 
@@ -290,24 +274,10 @@ void Core::update(GLFWwindow* window)
 		std::vector<GLubyte> data = { 0xFF, 0xFF, 0xFF, 0x0 };
 		Logger::logDebug(string_format("Reading pixel for color-picking at (%d,%d)", int(mouseX), height - int(mouseY)));
 		glReadPixels(int(mouseX), height - int(mouseY), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
-		bool error = false;
-		GLenum err;
-		while ((err = glGetError()) != GL_NO_ERROR)
-		{
-			std::ostringstream sstr;
-			sstr << "Got error while trying to read pixel for color-picking at (" << mouseX << "," << height - int(mouseY) << "): ";
-			switch (err)
-			{
-			case GL_INVALID_ENUM:
-				sstr << "GL_INVALID_ENUM";
-				break;
-			default:
-				sstr << err;
-			}
-			Logger::logError(sstr.str());
-			error = true;
-		}
-		if (!error)
+		GLenum error = glCheckError();
+		if (error != GL_NO_ERROR)
+			Logger::logError(string_format("Got error while trying to read pixel for color - picking at(%d, %d)", mouseX, height - int(mouseY)));
+		else
 		{
 			const auto picked_id =
 				data[0] +
@@ -322,9 +292,9 @@ void Core::update(GLFWwindow* window)
 			}
 			else {
 				Logger::logDebug(string_format("Picked id=%d,a=%d,b=%d,g=%d,r=%d", picked_id, int(data[3]), int(data[2]), int(data[1]), int(data[0])));
-				selectedDrawable_ = models_.getModel(picked_id);
-				if(selectedDrawable_==nullptr)
-					for(auto light : lights_.getAllLights())
+				selectedDrawable_ = storage_.models.getModel(picked_id);
+				if (selectedDrawable_ == nullptr)
+					for (auto light : storage_.lights.getAllLights())
 						if (light->getID() == picked_id)
 						{
 							selectedDrawable_ = light;
@@ -340,289 +310,17 @@ void Core::update(GLFWwindow* window)
 
 
 	}
-	nodes_.getNode(3)->setTransform(nodes_.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
+	storage_.nodes.getNode(3)->setTransform(storage_.nodes.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
 	//lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
 	//lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
 	//nodes_.getNode(1)->setTransform(nodes_.getNode(1)->getTransform().rotate(glm::vec3(0.0f, 0.0f, gameTime_)));
 }
 
-void Core::loadContent(Shader* shader)
-{
-	std::ifstream content_manifest_file("level.map");
-	std::string line;
-	auto count = 0;
-	if (!content_manifest_file)
-	{
-		Logger::logError("Could not open file level.map!");
-		content_manifest_file.close();
-		return;
-	}
-	//Assert version
-	do
-	{
-		getline(content_manifest_file, line);
-		count++;
-	} while (line.find('#') != std::string::npos);
-	if (line != "PAG6_1")
-	{
-		Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-		content_manifest_file.close();
-		return;
-	}
-	while (content_manifest_file.good())
-	{
-		getline(content_manifest_file, line);
-		count++;
-		if (line[0] == '#') continue;
-		auto x = split(line, ':');
-		if (x[0] == "MDL")
-		{
-			// Assert size 5
-			if (x.size() != 5)
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			Model* mdl = new Model(x[1]);
-			models_.addModel(mdl);
-			nodes_.addNode(new GraphNode(mdl));
-			glm::vec3 pos, rot, scale;
-			auto pos_str = split(x[2], ',');
-			if (pos_str.size() == 0)
-				pos = glm::vec3(0.0f);
-			else if (pos_str.size() == 1)
-				pos = glm::vec3(atof(pos_str[0].c_str()));
-			else if (pos_str.size() == 3)
-				pos = glm::vec3(atof(pos_str[0].c_str()), atof(pos_str[1].c_str()), atof(pos_str[2].c_str()));
-			else
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			auto rot_str = split(x[3], ',');
-			if (rot_str.size() == 0)
-				rot = glm::vec3(0.0f);
-			else if (rot_str.size() == 1)
-				rot = glm::vec3(glm::radians(atof(rot_str[0].c_str())));
-			else if (rot_str.size() == 3)
-			{
-				float f1 = atof(rot_str[0].c_str());
-				float f2 = atof(rot_str[1].c_str());
-				float f3 = atof(rot_str[2].c_str());
-				rot = glm::vec3(glm::radians(f1), glm::radians(f2), glm::radians(f3));
-			}
-			else
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			auto scale_str = split(x[4], ',');
-			if (scale_str.size() == 0)
-				scale = glm::vec3(1.0f);
-			else if (scale_str.size() == 1)
-				scale = glm::vec3(atof(scale_str[0].c_str()));
-			else if (scale_str.size() == 3)
-			{
-				float f1 = atof(scale_str[0].c_str());
-				float f2 = atof(scale_str[1].c_str());
-				float f3 = atof(scale_str[2].c_str());
-				scale = glm::vec3(f1, f2, f3);
-			}
-			else
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			nodes_.getAllNodes().back()->setTransform(nodes_.getAllNodes().back()->getTransform().translate(pos).rotate(rot).scale(scale));
-			root_.addChild(nodes_.getAllNodes().back());
-		}
-		else if (x[0] == "DIL")
-		{
-			// Assert size 5
-			if (x.size() != 5)
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			glm::vec3 val[4];
-			for (auto i = 0; i < 4; i++)
-			{
-				auto str = split(x[i + 1], ',');
-				if (str.size() == 1)
-				{
-					if (str[0].empty())
-						val[i] = glm::vec3(0.0f);
-					else
-					{
-						val[i] = glm::vec3(atof(str[0].c_str()));
-					}
-				}
-				else if (str.size() == 3)
-				{
-					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
-				}
-				else
-				{
-					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-					content_manifest_file.close();
-					return;
-				}
-			}
-			lights_.addLight(new DirectionalLight(val[0], val[1], val[2], val[3]));
-			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
-			root_.addChild(nodes_.getAllNodes().back());
-			lights_.getAllLights().back()->setupShader(shader);
-		}
-		else if (x[0] == "POL")
-		{
-			// Assert size 8
-			if (x.size() != 8)
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			glm::vec3 val[4];
-			for (auto i = 0; i < 4; i++)
-			{
-				auto str = split(x[i + 1], ',');
-				if (str.size() == 1)
-				{
-					if (str[0].empty())
-						val[i] = glm::vec3(0.0f);
-					else
-					{
-						val[i] = glm::vec3(atof(str[0].c_str()));
-					}
-				}
-				else if (str.size() == 3)
-				{
-					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
-				}
-				else
-				{
-					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-					content_manifest_file.close();
-					return;
-				}
-			}
-			float vf[3];
-			for (auto i = 0; i < 3; i++)
-			{
-				auto str = split(x[i + 5], ',');
-				if (str.size() == 1)
-				{
-					if (str[0].empty())
-						vf[i] = 0.0f;
-					else
-					{
-						vf[i] = atof(str[0].c_str());
-					}
-				}
-				else
-				{
-					Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-					content_manifest_file.close();
-					return;
-				}
-			}
-			lights_.addLight(new PointLight(val[0], val[1], val[2], val[3], vf[0], vf[1], vf[2]));
-			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
-			root_.addChild(nodes_.getAllNodes().back());
-			lights_.getAllLights().back()->setupShader(shader);
-		}
-		else if (x[0] == "SPL")
-		{
-			// Assert size 11
-			if (x.size() != 11)
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-			glm::vec3 val[5];
-			for (auto i = 0; i < 5; i++)
-			{
-				auto str = split(x[i + 1], ',');
-				if (str.size() == 1)
-				{
-					if (str[0].empty())
-						val[i] = glm::vec3(0.0f);
-					else
-					{
-						val[i] = glm::vec3(atof(str[0].c_str()));
-					}
-				}
-				else if (str.size() == 3)
-				{
-					val[i] = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
-				}
-				else
-				{
-					Logger::logError("File level.map is not supported!");
-					content_manifest_file.close();
-					return;
-				}
-			}
-			float vf[5];
-			for (auto i = 0; i < 5; i++)
-			{
-				auto str = split(x[i + 6], ',');
-				if (str.size() == 1)
-				{
-					if (str[0].empty())
-						vf[i] = 0.0f;
-					else
-					{
-						vf[i] = atof(str[0].c_str());
-					}
-				}
-				else
-				{
-					Logger::logError("File level.map is not supported!");
-					content_manifest_file.close();
-					return;
-				}
-			}
-			lights_.addLight(new SpotLight(val[0], val[1], val[2], val[3], val[4], glm::cos(glm::radians(vf[0])), glm::cos(glm::radians(vf[1])), vf[2], vf[3], vf[4]));
-			nodes_.addNode(new GraphNode(lights_.getAllLights().back()));
-			root_.addChild(nodes_.getAllNodes().back());
-			lights_.getAllLights().back()->setupShader(shader);
-		}
-		else if (x[0] == "SKY")
-		{
-			// Assert size 7
-			if (x.size() != 7)
-			{
-				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-				content_manifest_file.close();
-				return;
-			}
-
-			vector<std::string> faces;
-			for (auto i = 1; i < 7; i++)
-			{
-				faces.push_back(x[i]);
-			}
-			skybox_.loadCubemap(faces);
-		}
-		else
-		{
-			Logger::logError(string_format("File level.map is not supported! Line:%d", count));
-			content_manifest_file.close();
-			return;
-		}
-	}
-	content_manifest_file.close();
-}
-
 void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 {
+	GLsizei SCR_WIDTH, SCR_HEIGHT;
+	glfwGetWindowSize(window, &SCR_WIDTH, &SCR_HEIGHT);
+
 	if (!firstFrame_)
 	{
 		exposure_ = postprocess_.findAverage(exposure_);
@@ -630,29 +328,54 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	else
 		firstFrame_ = false;
 
+
 	// first pass
-	if (!drawColor_) glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
+	if (!drawColor_) glBindFramebuffer(GL_FRAMEBUFFER, deferred_.getGBuffer());
+	else glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glCheckError();
 	/* Clear the color buffer & depth buffer*/
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	glCheckError();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	auto const wvp_changed = cam_.getCameraChanged();
 	if (wvp_changed)
 		wvp_.setMatrix(cam_.getWVPMatrix(window));
-	shader->use();
-	glActiveTexture(GL_TEXTURE10);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_.getSkybox());
-	shader->setInt("skybox", 10);
-	shader->setBool("reflection", options_.reflections);
-	shader->setBool("refraction", options_.refractions);
-	shader->setFloat("refractiveIndex", options_.refractive_index);
-	shader->setVec3("viewPos", cam_.getCameraPos());
+	if (!drawColor_) deferred_.shader->use();
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
-	if (!drawColor_) skybox_.drawSkybox(cam_.getSkyboxMatrix());
+	glCheckError();
+	//if (!drawColor_) 
+	
 	// second pass
 	if (!drawColor_)
 	{
+		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
+		glCheckError();
+		glClearColor(0.f, 0.f, 0.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shader->use();
+		deferred_.bindTextures(shader, &storage_.skybox);
+		glCheckError();
+		shader->setBool("reflection", storage_.options.reflections);
+		shader->setBool("refraction", storage_.options.refractions);
+		shader->setFloat("refractiveIndex", storage_.options.refractive_index);
+		shader->setVec3("viewPos", cam_.getCameraPos());
+		FullscreenQuad::renderQuad();
+		glCheckError();
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, deferred_.getGBuffer());
+		glCheckError();
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postprocess_.getFramebuffer()); // write to default framebuffer
+												   // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
+												   // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the 		
+												   // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
+		glCheckError();
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glCheckError();
+		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
+		glCheckError();
+		root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_, true);
+		storage_.skybox.drawSkybox(cam_.getSkyboxMatrix());
 		postprocess_.render(exposure_);
 	}
 
@@ -702,8 +425,7 @@ void Core::mouseCallback(GLFWwindow * window, double const xpos, double const yp
 
 Core::~Core()
 {
-	nodes_.clear();
-	models_.clear();
+	storage_.clear();
 	ImGui_ImplGlfwGL3_Shutdown();
 	glfwTerminate();
 }
