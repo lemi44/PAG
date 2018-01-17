@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include <glm/glm.hpp>
 
-std::string const GUI::labels[4] = { "World Translation##value", "Translate##value", "Rotate##value", "Scale##value" };
+std::string const GUI::labels[5] = { "World Translation##value", "Translate##value", "Rotate##value", "Scale##value", "Refractive##value" };
 float const GUI::min[4] = { -50.0f, -50.0f, -glm::pi<float>(), 0.0f };
 float const GUI::max[4] = { 50.0f, 50.0f, glm::pi<float>(), 2.0f };
 
@@ -69,6 +69,19 @@ void GUI::ShowObject(const char* prefix, Model * mdl)
 			ImGui::NextColumn();
 			ImGui::PopID();
 		}
+		ImGui::PushID(++i); // Use field index as identifier.
+		ImGui::AlignTextToFramePadding();
+		// Here we use a Selectable (instead of Text) to highlight on hover
+		//ImGui::Text("Field_%d", i);
+		ImGui::Bullet();
+		ImGui::Selectable(labels[4].c_str());
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+		ImGui::Checkbox(labels[4].c_str(), &mdl->refractive);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+		ImGui::PopID();
 		ImGui::TreePop();
 	}
 	ImGui::PopID();

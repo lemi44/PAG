@@ -167,6 +167,7 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 						ImGui::SliderFloat3("Translate", reinterpret_cast<float*>(&mdl->pos), -50.f, 50.f);
 						ImGui::SliderFloat3("Rotate", reinterpret_cast<float*>(&mdl->rot), -glm::pi<float>(), glm::pi<float>());
 						ImGui::SliderFloat3("Scale", reinterpret_cast<float*>(&mdl->scale), 0.f, 2.f);
+						ImGui::Checkbox("Refractive", &mdl->refractive);
 					}
 				}
 				else

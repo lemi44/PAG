@@ -15,12 +15,12 @@ class Model : public Drawable
 {
 public:
 	/*  Functions   */
-	Model(const string path, bool gamma = false) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f), gammaCorrection(gamma)
+	Model(const string path, bool refractive = false, bool gamma = false) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f), gammaCorrection(gamma), refractive(refractive)
 	{
 		loadModel(path);
 		world = Transform::origin();
 	}
-	Model(aiNode *node, const aiScene *scene, const string directory, bool gamma = false) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f), gammaCorrection(gamma)
+	Model(aiNode *node, const aiScene *scene, const string directory, bool refractive = false, bool gamma = false) : Drawable(), aabb_min(0.f), aabb_max(0.f), pos(0.f), rot(0.f), scale(1.0f), gammaCorrection(gamma), refractive(refractive)
 	{
 		this->directory = directory;
 		world = Transform::origin();
@@ -37,6 +37,7 @@ public:
 	glm::vec3 rot;
 	glm::vec3 scale;
 	glm::mat3 normalMat;
+	bool refractive;
 	bool gammaCorrection;
 private:
 	/*  Model Data  */

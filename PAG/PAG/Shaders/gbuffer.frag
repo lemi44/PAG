@@ -16,6 +16,7 @@ struct Material {
     float shininess;
 };
 uniform Material material;
+uniform bool refraction;
 void main()
 {
 	//if(texture(material.diffuse, TexCoord).a <= 0.0)
@@ -26,6 +27,8 @@ void main()
 	gPosition.a = material.shininess;
     // also store the per-fragment normals into the gbuffer
     gNormal.rgb = normalize(ourNormal);
+	// store refraction
+	gNormal.a = refraction ? 1.0 : 0.0;
     // and the diffuse per-fragment color
     gAlbedoSpec.rgb = texture(material.diffuse, TexCoord).rgb;
     // store specular intensity in gAlbedoSpec's alpha component

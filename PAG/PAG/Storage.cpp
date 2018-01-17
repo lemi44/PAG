@@ -52,16 +52,13 @@ bool Storage::loadContent(Shader *shader, GraphNode* root)
 		auto x = split(line, ':');
 		if (x[0] == "MDL")
 		{
-			// Assert size 5
-			if (x.size() != 5)
+			// Assert size 6
+			if (x.size() != 6)
 			{
 				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
 				content_manifest_file.close();
 				return false;
 			}
-			Model* mdl = new Model(x[1]);
-			models.addModel(mdl);
-			nodes.addNode(new GraphNode(mdl));
 			glm::vec3 pos, rot, scale;
 			auto pos_str = split(x[2], ',');
 			if (pos_str.size() == 0)
@@ -112,6 +109,17 @@ bool Storage::loadContent(Shader *shader, GraphNode* root)
 				content_manifest_file.close();
 				return false;
 			}
+			auto refractive = false;
+			std::istringstream refr_bool(x[5]);
+			if (!(refr_bool>>refractive))
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return false;
+			}
+			Model* mdl = new Model(x[1], refractive);
+			models.addModel(mdl);
+			nodes.addNode(new GraphNode(mdl));
 			nodes.getAllNodes().back()->setTransform(nodes.getAllNodes().back()->getTransform().translate(pos).rotate(rot).scale(scale));
 			root->addChild(nodes.getAllNodes().back());
 		}

@@ -1,8 +1,8 @@
 #Header - must be PAG6_1
 PAG6_1
-#Model - MDL:filename:pos(x,y,z):rot(x,y,z):scale(x,y,z)
-MDL:Assets/nanosuit/nanosuit.obj:0.0,1.27,0.0::0.254
-MDL:Assets/level/map.fbx::-90.0,0.0,0.0:0.03937007874
+#Model - MDL:filename:pos(x,y,z):rot(x,y,z):scale(x,y,z):refractive
+MDL:Assets/nanosuit/nanosuit.obj:0.0,1.27,0.0::0.254:1
+MDL:Assets/level/map.fbx::-90.0,0.0,0.0:0.03937007874:0
 #Directional Light - DIL:ambient:diffuse:specular:direction
 DIL:0.2:0.05:0.4:0.5
 #Point Light - POL:ambient:diffuse:specular:position:constant:linear:quadratic

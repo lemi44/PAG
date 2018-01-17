@@ -13,6 +13,7 @@ void Model::draw(Shader* shader, const ViewProjection wvp, const Transform model
 	shader->setMat4("view", wvp.view);
 	shader->setMat4("projection", wvp.projection);
 	shader->setMat3("normalMat", normalMat);
+	shader->setBool("refraction", refractive);
 	for (auto &m : meshes)
 		m.draw(shader);
 	for (auto &mdl : children)
@@ -78,7 +79,7 @@ void Model::processNode(aiNode *node, const aiScene *scene)
 	// then do the same for each of its children
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{
-		children.push_back(Model(node->mChildren[i], scene, directory));
+		children.push_back(Model(node->mChildren[i], scene, directory, refractive, gammaCorrection));
 		//processNode(node->mChildren[i], scene);
 	}
 }

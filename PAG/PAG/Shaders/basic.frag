@@ -63,11 +63,12 @@ void main()
 	float Shininess = texture(gPosition, TexCoords).a;
 	float Reflection = texture(gReflection, TexCoords).r;
 	float AmbientOcclusion = texture(ssao, TexCoords).r;
+	bool gRefraction = texture(gNormal, TexCoords).a > 0.5 ? true : false;
 	if(!ssao_on)
 		AmbientOcclusion = 1.0;
     vec3 viewDir = normalize(viewPos - FragPos);
 
-	if(refraction)
+	if(refraction && gRefraction)
 	{
 		float ratio = 1.00 / refractiveIndex;
 		vec3 I = -viewDir;
