@@ -2,6 +2,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+struct ViewProjection
+{
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+
 class Transform
 {
 private:

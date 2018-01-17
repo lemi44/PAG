@@ -123,6 +123,7 @@ struct Options
 {
 	bool reflections = true;
 	bool refractions = false;
+	bool ssao = true;
 	float refractive_index = 1.52f;
 };
 

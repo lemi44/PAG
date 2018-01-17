@@ -2,12 +2,7 @@
 #include "Logger.h"
 #include <vector>
 #include "FullscreenQuad.h"
-
-
-float lerp(float a, float b, float f)
-{
-	return a + f * (b - a);
-}
+#include "Helpers.h"
 
 Postprocess::Postprocess()
 {

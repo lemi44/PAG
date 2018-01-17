@@ -7,6 +7,7 @@
 #include "Postprocess.h"
 #include "Skybox.h"
 #include "Deferred.h"
+#include "SSAO.h"
 
 class Core
 {
@@ -15,7 +16,8 @@ private:
 	GraphNode root_;
 	Postprocess postprocess_;
 	Deferred deferred_;
-	Transform wvp_;
+	SSAO ssao_;
+	ViewProjection wvp_;
 	Camera cam_;
 	GLfloat oldTime_, newTime_, gameTime_, exposure_, intersection_distance;
 	double lastX_, lastY_;

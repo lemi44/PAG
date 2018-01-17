@@ -19,7 +19,7 @@ void GraphNode::setTransform(Transform const local)
 	dirty_ = true;
 }
 
-void GraphNode::render(const Transform wvp, const Transform model_mat, bool dirty, const bool picking_color, const bool gui, const bool light_only, Shader* sha, Shader* line_shader)
+void GraphNode::render(const ViewProjection wvp, const Transform model_mat, bool dirty, const bool picking_color, const bool gui, const bool light_only, Shader* sha, Shader* line_shader)
 {
 	if (!sha) sha = shader_;
 	if (!line_shader) line_shader = line_shader_;
@@ -65,7 +65,7 @@ void GraphNode::setLineShader(Shader* shader)
 	line_shader_ = shader;
 }
 
-void GraphNode::renderDrawable(Drawable * drawable, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
+void GraphNode::renderDrawable(Drawable * drawable, const ViewProjection wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
 {
 	
 	if (picking_color)
@@ -80,7 +80,7 @@ void GraphNode::renderDrawable(Drawable * drawable, const Transform wvp, const T
 			drawable->draw(sha, wvp, model_mat, gui);
 	}
 }
-void GraphNode::renderLight(Drawable * drawable, const Transform wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
+void GraphNode::renderLight(Drawable * drawable, const ViewProjection wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
 {
 
 	if (picking_color)

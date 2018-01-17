@@ -21,7 +21,7 @@ DirectionalLight::~DirectionalLight()
 {
 }
 
-void DirectionalLight::draw(Shader* shader, const Transform wvp, const Transform model, const bool gui)
+void DirectionalLight::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
 	const auto tmp_dir = model.getMatrix() * glm::vec4(local_direction, 0.0);
 	real_direction = glm::normalize(glm::vec3(tmp_dir));
@@ -31,10 +31,11 @@ void DirectionalLight::draw(Shader* shader, const Transform wvp, const Transform
 		setupShader(shader);
 }
 
-void DirectionalLight::drawColor(Shader * shader, const Transform wvp)
+void DirectionalLight::drawColor(Shader * shader, const ViewProjection wvp)
 {
 	shader->setMat4("model", glm::mat4(1.0f));
-	shader->setMat4("wvp", wvp.getMatrix());
+	shader->setMat4("wvp", wvp.view);
+	shader->setMat4("projection", wvp.projection);
 	meshes_[0].drawColor(shader, id);
 }
 

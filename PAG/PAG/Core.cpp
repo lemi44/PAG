@@ -56,14 +56,20 @@ int Core::init(int const width, int const height)
 	Shader hdr_sha("Shaders/quad.vert", "Shaders/hdr.frag");
 	Shader skybox_sha("Shaders/skybox.vert", "Shaders/skybox.frag");
 	Shader gBuffer_sha("Shaders/basic.vert", "Shaders/gbuffer.frag");
-	postprocess_.init(width, height, &hdr_sha, &quad_sha);
+	Shader ssao_sha("Shaders/quad.vert", "Shaders/ssao.frag");
+	Shader ssao_blur_sha("Shaders/quad.vert", "Shaders/ssao_blur.frag");
+	if (!postprocess_.init(width, height, &hdr_sha, &quad_sha))
+		return 1;
 	storage_.skybox.init(&skybox_sha);
 	/* Apply shader */
 	light_sha.use();
 	if (!storage_.loadContent(&light_sha, &root_))
-		return 1;
-	deferred_.init(width, height);
+		return 2;
+	if (!deferred_.init(width, height))
+		return 3;
 	deferred_.shader = &gBuffer_sha;
+	if (!ssao_.init(width, height, &ssao_sha, &ssao_blur_sha))
+		return 4;
 	glfwSetInputMode(win.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glfwSetCursorPosCallback(win.get(), mouseCallback);
@@ -76,12 +82,12 @@ int Core::init(int const width, int const height)
 	glEnable(GL_DEPTH_TEST);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_CULL_FACE);
-	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(1, 0);
-	glLineWidth(2.f);
+	//glDisable(GL_CULL_FACE);
+	//glEnable(GL_POLYGON_OFFSET_FILL);
+	//glPolygonOffset(1, 0);
+	//glLineWidth(2.f);
 
-	wvp_ = Transform(cam_.getWVPMatrix(win.get()));
+	wvp_ = { cam_.getView(win.get()), cam_.getProjection(win.get()) };
 	root_.setShader(&gBuffer_sha);
 	root_.setLineShader(&line_sha);
 
@@ -114,6 +120,7 @@ void Core::mainloop(GLFWwindow* window, Shader* shader)
 				ImGui::SliderFloat("Exposure", &exposure_, 0.0f, 1.0f);
 				ImGui::Checkbox("Reflections", &storage_.options.reflections);
 				ImGui::Checkbox("Refractions", &storage_.options.refractions);
+				ImGui::Checkbox("SSAO", &storage_.options.ssao);
 				ImGui::SliderFloat("Refractive Index", &storage_.options.refractive_index, 0.0f, 3.0f);
 				if (selectedDrawable_ != nullptr)
 				{
@@ -341,7 +348,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	auto const wvp_changed = cam_.getCameraChanged();
 	if (wvp_changed)
-		wvp_.setMatrix(cam_.getWVPMatrix(window));
+		wvp_ = { cam_.getView(window), cam_.getProjection(window) };
 	if (!drawColor_) deferred_.shader->use();
 	root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_);
 	glCheckError();
@@ -350,15 +357,17 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 	// second pass
 	if (!drawColor_)
 	{
+		if (storage_.options.ssao)ssao_.render(&deferred_, wvp_.projection);
 		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 		glCheckError();
 		glClearColor(0.f, 0.f, 0.f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shader->use();
-		deferred_.bindTextures(shader, &storage_.skybox);
+		deferred_.bindTextures(shader, &storage_.skybox, &ssao_);
 		glCheckError();
 		shader->setBool("reflection", storage_.options.reflections);
 		shader->setBool("refraction", storage_.options.refractions);
+		shader->setBool("ssao_on", storage_.options.ssao);
 		shader->setFloat("refractiveIndex", storage_.options.refractive_index);
 		shader->setVec3("viewPos", cam_.getCameraPos());
 		FullscreenQuad::renderQuad();
@@ -375,7 +384,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 		glCheckError();
 		root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_, true);
-		storage_.skybox.drawSkybox(cam_.getSkyboxMatrix());
+		storage_.skybox.drawSkybox(cam_.getSkyboxMatrix(window));
 		postprocess_.render(exposure_);
 	}
 

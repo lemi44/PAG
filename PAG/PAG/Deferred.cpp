@@ -51,6 +51,8 @@ void Deferred::updateTextures(GLsizei width, GLsizei height) const
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
 	glBindTexture(GL_TEXTURE_2D, gNormal);
@@ -66,7 +68,7 @@ void Deferred::updateTextures(GLsizei width, GLsizei height) const
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
 
 	glBindTexture(GL_TEXTURE_2D, gReflection);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gReflection, 0);
@@ -85,7 +87,7 @@ GLuint Deferred::getGBuffer() const
 	return gBuffer;
 }
 
-void Deferred::bindTextures(Shader* shader, Skybox* skybox) const
+void Deferred::bindTextures(Shader* shader, Skybox* skybox, SSAO* ssao) const
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, gPosition);
@@ -100,8 +102,21 @@ void Deferred::bindTextures(Shader* shader, Skybox* skybox) const
 	glBindTexture(GL_TEXTURE_2D, gReflection);
 	shader->setInt("gReflection", 3);
 	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, ssao->getSSAO());
+	shader->setInt("ssao", 4);
+	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox->getSkybox());
-	shader->setInt("skybox", 4);
+	shader->setInt("skybox", 5);
+}
+
+GLuint Deferred::getGPosition() const
+{
+	return gPosition;
+}
+
+GLuint Deferred::getGNormal() const
+{
+	return gNormal;
 }
 
 Deferred::~Deferred()

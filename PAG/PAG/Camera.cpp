@@ -2,9 +2,9 @@
 #include <glm/gtc/matrix_transform.inl>
 
 
-Camera::Camera() : changed_(true), fov_(glm::radians(45.f)), world(1.0f)
+Camera::Camera() : changed_(true), fov_(glm::radians(45.f))
 {
-	cameraPos_ = glm::vec3(0.0f, 1.f, 2.0f);
+	cameraPos_ = glm::vec3(0.0f, 2.f, 2.0f);
 	cameraUp_ = glm::vec3(0.f, 1.f, 0.f);
 	cameraFront_ = glm::vec3(0.f, 0.f, -1.f);
 }
@@ -13,22 +13,43 @@ glm::mat4 Camera::getWVPMatrix(GLFWwindow* window)
 {
 	if (changed_)
 	{
-		/* Set view matrix */
-		view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
-		int w;
-		int h;
-		glfwGetWindowSize(window, &w, &h);
-		projection = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
-		/* Set MVP matrix */
-		wvp_ = projection * view * world;
+		updateVP(window);
 		changed_ = false;
 	}
 	return wvp_;
 }
 
-glm::mat4 Camera::getSkyboxMatrix() const
+glm::mat4 Camera::getSkyboxMatrix(GLFWwindow* window)
 {
+	if (changed_)
+	{
+		/* Set view matrix */
+		updateVP(window);
+		changed_ = false;
+	}
 	return projection * glm::mat4(glm::mat3(view));
+}
+
+glm::mat4 Camera::getProjection(GLFWwindow* window)
+{
+	if (changed_)
+	{
+		/* Set view matrix */
+		updateVP(window);
+		changed_ = false;
+	}
+	return projection;
+}
+
+glm::mat4 Camera::getView(GLFWwindow* window)
+{
+	if (changed_)
+	{
+		/* Set view matrix */
+		updateVP(window);
+		changed_ = false;
+	}
+	return view;
 }
 
 glm::vec3 Camera::getCameraPos() const
@@ -104,6 +125,18 @@ GLfloat Camera::getFoV() const
 
 Camera::~Camera()
 {
+}
+
+void Camera::updateVP(GLFWwindow* window)
+{
+	/* Set view matrix */
+	view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
+	int w;
+	int h;
+	glfwGetWindowSize(window, &w, &h);
+	projection = glm::perspective(fov_, float(w) / float(h), 0.001f, 100.0f);
+	/* Set MVP matrix */
+	wvp_ = projection * view;
 }
 
 glm::vec3 Camera::getRight() {

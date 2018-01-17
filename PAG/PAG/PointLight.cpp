@@ -17,7 +17,7 @@ PointLight::PointLight(const glm::vec3 ambient, const glm::vec3 diffuse, const g
 {
 }
 
-void PointLight::draw(Shader* shader, const Transform wvp, const Transform model, const bool gui)
+void PointLight::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
 	const auto tmp_dir = model.getMatrix() * glm::vec4(local_position, 1.0);
 	real_position = glm::vec3(tmp_dir);
@@ -27,10 +27,11 @@ void PointLight::draw(Shader* shader, const Transform wvp, const Transform model
 		setupShader(shader);
 }
 
-void PointLight::drawColor(Shader * shader, const Transform wvp)
+void PointLight::drawColor(Shader * shader, const ViewProjection wvp)
 {
 	shader->setMat4("model", Transform::origin().translate(real_position).getMatrix());
-	shader->setMat4("wvp", wvp.getMatrix());
+	shader->setMat4("view", wvp.view);
+	shader->setMat4("projection", wvp.projection);
 	meshes_[0].drawColor(shader, id);
 }
 

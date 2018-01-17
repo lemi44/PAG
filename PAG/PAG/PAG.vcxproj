@@ -183,6 +183,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Skybox.cpp" />
     <ClCompile Include="SpotLight.cpp" />
+    <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="Storage.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -198,6 +199,7 @@
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="Drawable.h" />
     <ClInclude Include="FullscreenQuad.h" />
+    <ClInclude Include="Helpers.h" />
     <ClInclude Include="Postprocess.h" />
     <ClInclude Include="GraphNode.h" />
     <ClInclude Include="GUI.h" />
@@ -213,6 +215,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Skybox.h" />
     <ClInclude Include="SpotLight.h" />
+    <ClInclude Include="SSAO.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
@@ -278,6 +281,8 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </DeploymentContent>
     </None>
+    <None Include="Shaders\ssao.frag" />
+    <None Include="Shaders\ssao_blur.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,10 @@
 #pragma once
-#include <glad\glad.h>
+#include <glad/glad.h>
+#include "SSAO.h"
 #include "Shader.h"
 #include "Skybox.h"
+
+class SSAO;
 
 class Deferred
 {
@@ -15,8 +18,9 @@ public:
 	void updateTextures(GLsizei width, GLsizei height) const;
 	void updateRBO(GLsizei width, GLsizei height) const;
 	GLuint getGBuffer() const;
-	void bindTextures(Shader* shader, Skybox* skybox) const;
+	void bindTextures(Shader* shader, Skybox* skybox, SSAO* ssao) const;
+	GLuint getGPosition() const;
+	GLuint getGNormal() const;
 	Shader *shader;
 	~Deferred();
 };
-

@@ -4,12 +4,14 @@
 #include <assimp/postprocess.h>
 #include "Logger.h"
 
-void Model::draw(Shader* shader, const Transform wvp, const Transform model, const bool gui)
+void Model::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
-	setWorld(model.translate(pos).rotate(rot).scale(scale));
+	world = model.translate(pos).rotate(rot).scale(scale);
+	updateNormalMatrix(wvp);
 	/* Get uniform location and send MVP matrix there */
 	shader->setMat4("model", world.getMatrix());
-	shader->setMat4("wvp", wvp.getMatrix());
+	shader->setMat4("view", wvp.view);
+	shader->setMat4("projection", wvp.projection);
 	shader->setMat3("normalMat", normalMat);
 	for (auto &m : meshes)
 		m.draw(shader);
@@ -17,9 +19,10 @@ void Model::draw(Shader* shader, const Transform wvp, const Transform model, con
 		mdl.draw(shader, wvp, world, gui);
 }
 
-void Model::drawColor(Shader* shader, const Transform wvp) {
+void Model::drawColor(Shader* shader, const ViewProjection wvp) {
 	shader->setMat4("model", world.getMatrix());
-	shader->setMat4("wvp", wvp.getMatrix());
+	shader->setMat4("view", wvp.view);
+	shader->setMat4("projection", wvp.projection);
 	for (auto &m : meshes)
 		m.drawColor(shader, id);
 	for (auto &mdl : children)
@@ -161,15 +164,9 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	return Mesh(vertices, indices, material);
 }
 
-void Model::updateNormalMatrix()
+void Model::updateNormalMatrix(const ViewProjection wvp)
 {
-	normalMat = glm::transpose(glm::inverse(world.getMatrix()));
-}
-
-void Model::setWorld(const Transform& world)
-{
-	this->world = world;
-	updateNormalMatrix();
+	normalMat = glm::transpose(glm::inverse(glm::mat3(wvp.view * world.getMatrix())));
 }
 
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType type, const string typeName, const aiScene *scene)

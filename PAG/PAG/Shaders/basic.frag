@@ -38,12 +38,14 @@ uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform bool reflection;
 uniform bool refraction;
+uniform bool ssao_on;
 uniform float refractiveIndex;
 
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gReflection;
+uniform sampler2D ssao;
 uniform samplerCube skybox;
 
 float alpha_cutoff = 0.001;
@@ -59,7 +61,10 @@ void main()
     vec3 Albedo = texture(gAlbedoSpec, TexCoords).rgb;
     float Specular = texture(gAlbedoSpec, TexCoords).a;
 	float Shininess = texture(gPosition, TexCoords).a;
-	vec3 Reflection = texture(gReflection, TexCoords).rgb;
+	float Reflection = texture(gReflection, TexCoords).r;
+	float AmbientOcclusion = texture(ssao, TexCoords).r;
+	if(!ssao_on)
+		AmbientOcclusion = 1.0;
     vec3 viewDir = normalize(viewPos - FragPos);
 
 	if(refraction)
@@ -86,7 +91,7 @@ void main()
     vec3 reflectDir = reflect(-lightDir, Normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), Shininess);
     // combine results
-    vec3 ambient = dirLight.ambient * Albedo;
+    vec3 ambient = dirLight.ambient * Albedo * AmbientOcclusion;
     vec3 diffuse = dirLight.diffuse * diff * Albedo;
     vec3 specular = dirLight.specular * spec * Specular;
     vec3 result = (ambient + diffuse + specular);
@@ -104,7 +109,7 @@ void main()
 		float distance = length(pointLights[i].position - FragPos);
 		float attenuation = 1.0 / (pointLights[i].constant + pointLights[i].linear * distance + pointLights[i].quadratic * (distance * distance));
 		// combine results
-		ambient = pointLights[i].ambient * Albedo;
+		ambient = pointLights[i].ambient * Albedo * AmbientOcclusion;
 		diffuse = pointLights[i].diffuse * diff * Albedo;
 		specular = pointLights[i].specular * spec * Specular;
 		ambient *= attenuation;
@@ -128,7 +133,7 @@ void main()
     float epsilon = spotLight.cutOff - spotLight.outerCutOff;
     float intensity = clamp((theta - spotLight.outerCutOff) / epsilon, 0.0, 1.0);
     // combine results
-    ambient = spotLight.ambient * Albedo;
+    ambient = spotLight.ambient * Albedo * AmbientOcclusion;
     diffuse = spotLight.diffuse * diff * Albedo;
     specular = spotLight.specular * spec * Specular;
     ambient *= attenuation * intensity;
@@ -137,11 +142,11 @@ void main()
     result += (ambient + diffuse + specular);
 
     if(reflection)
-		if(Reflection.r > 0.0)
+		if(Reflection > 0.0)
 		{
 			vec3 I = -viewDir;
 			vec3 R = reflect(I, Normal);
-			result = mix(result, texture(skybox, R).rgb, Reflection.r);
+			result = mix(result, texture(skybox, R).rgb, Reflection);
 		}
 
     FragColor = vec4(result, 1.0);

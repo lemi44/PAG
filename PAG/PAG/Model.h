@@ -26,8 +26,8 @@ public:
 		world = Transform::origin();
 		processNode(node, scene);
 	}
-	void draw(Shader* shader, const Transform wvp, const Transform model, const bool gui) final;
-	void drawColor(Shader * shader, const Transform wvp) final;
+	void draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui) final;
+	void drawColor(Shader * shader, const ViewProjection wvp) final;
 	virtual vector<Mesh>& getMeshes() override;
 	vector<Model>& getChildren();
 	glm::vec3 aabb_min;
@@ -48,8 +48,7 @@ private:
 	void loadModel(string path);
 	void processNode(aiNode *node, const aiScene *scene);
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-	void updateNormalMatrix();
-	void setWorld(const Transform& world);
+	void updateNormalMatrix(ViewProjection wvp);
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 		std::string typeName, const aiScene *scene);
 };

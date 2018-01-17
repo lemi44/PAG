@@ -108,6 +108,9 @@
     <ClCompile Include="FullscreenQuad.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="SSAO.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -200,6 +203,12 @@
     <ClInclude Include="FullscreenQuad.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="Helpers.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="SSAO.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\line.frag">
@@ -230,6 +239,12 @@
       <Filter>Pliki shaderów</Filter>
     </None>
     <None Include="Shaders\gbuffer.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\ssao.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\ssao_blur.frag">
       <Filter>Pliki shaderów</Filter>
     </None>
   </ItemGroup>

@@ -2,7 +2,7 @@
 layout (location = 0) out vec4 gPosition;
 layout (location = 1) out vec4 gNormal;
 layout (location = 2) out vec4 gAlbedoSpec;
-layout (location = 3) out vec3 gReflection;
+layout (location = 3) out float gReflection;
 
 in vec2 TexCoord;
 in vec3 FragPos;
@@ -18,6 +18,8 @@ struct Material {
 uniform Material material;
 void main()
 {
+	//if(texture(material.diffuse, TexCoord).a <= 0.0)
+		//discard;
     // store the fragment position vector in the first gbuffer texture
     gPosition.rgb = FragPos;
 	// store shininess
@@ -29,5 +31,5 @@ void main()
     // store specular intensity in gAlbedoSpec's alpha component
     gAlbedoSpec.a = texture(material.specular, TexCoord).r;
     // store reflection intensity in gReflection
-    gReflection.rgb = texture(material.height, TexCoord).rgb;
+    gReflection = texture(material.height, TexCoord).r;
 }

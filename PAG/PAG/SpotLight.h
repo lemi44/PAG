@@ -10,8 +10,8 @@ public:
 		float quadratic);
 	~SpotLight();
 	void setupShader(Shader* shader) final;
-	void draw(Shader* shader, const Transform wvp, const Transform model, const bool gui) final;
-	void drawColor(Shader * shader, const Transform wvp) final;
+	void draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui) final;
+	void drawColor(Shader * shader, const ViewProjection wvp) final;
 	light_type getType() const final;
 	glm::vec3 real_position;
 	glm::vec3 local_position;

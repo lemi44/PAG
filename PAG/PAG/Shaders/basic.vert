@@ -6,13 +6,15 @@ out vec3 FragPos;
 out vec3 ourNormal;
 out vec2 TexCoord;
 uniform mat4 model;
-uniform mat4 wvp;
+uniform mat4 view;
+uniform mat4 projection;
 uniform mat3 normalMat;
 void main()
 {
-    FragPos = vec3(model * vec4(position, 1.0));
+	vec4 viewPos = view * model * vec4(position, 1.0);
+    FragPos = viewPos.xyz;
     ourNormal = normalMat * normal;
     TexCoord = texCoord;
     
-    gl_Position = wvp * vec4(FragPos, 1.0);
+    gl_Position = projection * viewPos;
 }
