@@ -3,6 +3,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "Logger.h"
+#include "glm/gtc/matrix_inverse.hpp"
 
 void Model::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
@@ -167,7 +168,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 
 void Model::updateNormalMatrix(const ViewProjection wvp)
 {
-	normalMat = glm::transpose(glm::inverse(glm::mat3(wvp.view * world.getMatrix())));
+	normalMat = glm::inverseTranspose(glm::mat3(wvp.view * world.getMatrix()));
 }
 
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, const aiTextureType type, const string typeName, const aiScene *scene)

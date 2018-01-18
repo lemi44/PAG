@@ -111,6 +111,9 @@
     <ClCompile Include="SSAO.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="Particle.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -209,6 +212,9 @@
     <ClInclude Include="SSAO.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\line.frag">
@@ -245,6 +251,12 @@
       <Filter>Pliki shaderów</Filter>
     </None>
     <None Include="Shaders\ssao_blur.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\particle.frag">
+      <Filter>Pliki shaderów</Filter>
+    </None>
+    <None Include="Shaders\particle.vert">
       <Filter>Pliki shaderów</Filter>
     </None>
   </ItemGroup>

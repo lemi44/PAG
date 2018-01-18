@@ -1,5 +1,5 @@
-#Header - must be PAG6_1
-PAG6_1
+#Header - must be PAG6_3
+PAG6_3
 #Model - MDL:filename:pos(x,y,z):rot(x,y,z):scale(x,y,z):refractive
 MDL:Assets/nanosuit/nanosuit.obj:0.0,1.27,0.0::0.254:1
 MDL:Assets/level/map.fbx::-90.0,0.0,0.0:0.03937007874:0
@@ -11,3 +11,5 @@ POL:0.05:0.8:1.0:1.0,1.0,1.0:1.0:0.9:0.032
 SPL:0.0:1.0:1.0:-3.0,2.0,-3.0:-0.639602,0.426401,-0.639602:12.5:15.0:1.0:0.9:0.032
 #Skybox - SKY:right:left:top:bottom:back:front
 SKY:Assets/hw_red/red_rt.tga:Assets/hw_red/red_lf.tga:Assets/hw_red/red_up.tga:Assets/hw_red/red_dn.tga:Assets/hw_red/red_bk.tga:Assets/hw_red/red_ft.tga
+#Particle - PAR:texture_filename:pos(x,y,z)
+PAR:blackSmoke00.png:2.0,4.0,2.0

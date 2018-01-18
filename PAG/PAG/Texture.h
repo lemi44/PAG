@@ -17,7 +17,7 @@ public:
 	bool loadTexture(const char* path, string directory);
 	bool loadTexture(aiTexture *texture);
 	void white();
-	static void activate(GLuint id);
+	void activate();
 	~Texture();
 };
 

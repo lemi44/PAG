@@ -136,5 +136,7 @@ struct Storage
 	LightStorage lights;
 	Options options;
 	Skybox skybox;
+	Texture particle_texture;
+	GraphNode* particle_node;
 };
 

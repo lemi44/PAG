@@ -8,6 +8,7 @@
 #include "Skybox.h"
 #include "Deferred.h"
 #include "SSAO.h"
+#include "Particle.h"
 
 class Core
 {
@@ -19,6 +20,7 @@ private:
 	SSAO ssao_;
 	ViewProjection wvp_;
 	Camera cam_;
+	ParticleGenerator *particles_;
 	GLfloat oldTime_, newTime_, gameTime_, exposure_, intersection_distance;
 	double lastX_, lastY_;
 	bool firstMouse_, showGui_, drawColor_, firstFrame_;

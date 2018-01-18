@@ -58,6 +58,7 @@ int Core::init(int const width, int const height)
 	Shader gBuffer_sha("Shaders/basic.vert", "Shaders/gbuffer.frag");
 	Shader ssao_sha("Shaders/quad.vert", "Shaders/ssao.frag");
 	Shader ssao_blur_sha("Shaders/quad.vert", "Shaders/ssao_blur.frag");
+	Shader particle_sha("Shaders/particle.vert", "Shaders/particle.frag");
 	if (!postprocess_.init(width, height, &hdr_sha, &quad_sha))
 		return 1;
 	storage_.skybox.init(&skybox_sha);
@@ -70,6 +71,11 @@ int Core::init(int const width, int const height)
 	deferred_.shader = &gBuffer_sha;
 	if (!ssao_.init(width, height, &ssao_sha, &ssao_blur_sha))
 		return 4;
+	particles_ = new ParticleGenerator(
+		&particle_sha,
+		storage_.particle_texture,
+		500
+	);
 	glfwSetInputMode(win.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glfwSetCursorPosCallback(win.get(), mouseCallback);
@@ -319,6 +325,8 @@ void Core::update(GLFWwindow* window)
 
 	}
 	storage_.nodes.getNode(3)->setTransform(storage_.nodes.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
+	storage_.particle_node->setTransform(storage_.particle_node->getTransform().translate(glm::vec3(glm::sin(glfwGetTime())*0.1f, 0.0f, 0.0f)));
+	particles_->Update(gameTime_, *storage_.particle_node, 2, cam_.getCameraPos(), glm::vec3(0.1f, 0.1f, 0.1f));
 	//lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
 	//lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
 	//nodes_.getNode(1)->setTransform(nodes_.getNode(1)->getTransform().rotate(glm::vec3(0.0f, 0.0f, gameTime_)));
@@ -386,6 +394,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 		glCheckError();
 		root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_, true);
 		storage_.skybox.drawSkybox(cam_.getSkyboxMatrix(window));
+		particles_->Draw(wvp_, cam_.getUp(), cam_.getRight());
 		postprocess_.render(exposure_);
 	}
 

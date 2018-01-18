@@ -166,6 +166,7 @@
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="FullscreenQuad.cpp" />
+    <ClCompile Include="Particle.cpp" />
     <ClCompile Include="Postprocess.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GraphNode.cpp" />
@@ -200,6 +201,7 @@
     <ClInclude Include="Drawable.h" />
     <ClInclude Include="FullscreenQuad.h" />
     <ClInclude Include="Helpers.h" />
+    <ClInclude Include="Particle.h" />
     <ClInclude Include="Postprocess.h" />
     <ClInclude Include="GraphNode.h" />
     <ClInclude Include="GUI.h" />
@@ -257,6 +259,8 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </DeploymentContent>
     </None>
+    <None Include="Shaders\particle.frag" />
+    <None Include="Shaders\particle.vert" />
     <None Include="Shaders\quad.frag">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </DeploymentContent>

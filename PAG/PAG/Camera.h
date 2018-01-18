@@ -9,6 +9,7 @@ public:
 	Camera();
 	glm::mat4 getWVPMatrix(GLFWwindow* window);
 	glm::vec3 getRight();
+	glm::vec3 getUp();
 	glm::vec3 getCameraPos() const;
 	glm::vec3 getCameraFront() const;
 	glm::vec3 getCameraUp() const;

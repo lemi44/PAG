@@ -105,7 +105,7 @@ void Texture::white()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
-void Texture::activate(GLuint const id)
+void Texture::activate()
 {
 	glBindTexture(GL_TEXTURE_2D, id);
 }

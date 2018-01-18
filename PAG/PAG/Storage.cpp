@@ -38,7 +38,7 @@ bool Storage::loadContent(Shader *shader, GraphNode* root)
 		getline(content_manifest_file, line);
 		count++;
 	} while (line.find('#') != std::string::npos);
-	if (line != "PAG6_1")
+	if (line != "PAG6_3")
 	{
 		Logger::logError(string_format("File level.map is not supported! Line:%d", count));
 		content_manifest_file.close();
@@ -293,6 +293,47 @@ bool Storage::loadContent(Shader *shader, GraphNode* root)
 				faces.push_back(x[i]);
 			}
 			skybox.loadCubemap(faces);
+		}
+		else if (x[0] == "PAR")
+		{
+			// Assert size 3
+			if (x.size() != 3)
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return false;
+			}
+			if(!particle_texture.loadTexture(x[1].c_str(), "Assets"))
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return false;
+			}
+			glm::vec3 pos;
+			auto str = split(x[2], ',');
+			if (str.size() == 1)
+			{
+				if (str[0].empty())
+					pos = glm::vec3(0.0f);
+				else
+				{
+					pos = glm::vec3(atof(str[0].c_str()));
+				}
+			}
+			else if (str.size() == 3)
+			{
+				pos = glm::vec3(atof(str[0].c_str()), atof(str[1].c_str()), atof(str[2].c_str()));
+			}
+			else
+			{
+				Logger::logError(string_format("File level.map is not supported! Line:%d", count));
+				content_manifest_file.close();
+				return false;
+			}
+			particle_node = new GraphNode(nullptr);
+			particle_node->setTransform(particle_node->getTransform().translate(pos));
+			nodes.addNode(particle_node);
+			root->addChild(particle_node);
 		}
 		else
 		{

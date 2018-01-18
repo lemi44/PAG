@@ -140,5 +140,10 @@ void Camera::updateVP(GLFWwindow* window)
 }
 
 glm::vec3 Camera::getRight() {
-	return glm::vec3(wvp_[0][0], wvp_[1][0], wvp_[2][0]);
+	return glm::vec3(view[0][0], view[1][0], view[2][0]);
+}
+
+glm::vec3 Camera::getUp()
+{
+	return glm::vec3(view[0][1], view[1][1], view[2][1]);
 }
