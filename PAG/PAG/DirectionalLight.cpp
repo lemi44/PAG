@@ -23,7 +23,7 @@ DirectionalLight::~DirectionalLight()
 
 void DirectionalLight::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
-	const auto tmp_dir = model.getMatrix() * glm::vec4(local_direction, 0.0);
+	const auto tmp_dir = wvp.view * model.getMatrix() * glm::vec4(local_direction, 0.0);
 	real_direction = glm::normalize(glm::vec3(tmp_dir));
 	if (gui)
 		drawColor(shader, wvp);

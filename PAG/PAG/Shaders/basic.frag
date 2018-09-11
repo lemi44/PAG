@@ -31,8 +31,6 @@ struct SpotLight {
 #define NR_POINT_LIGHTS 1
 
 in vec2 TexCoords;
-
-uniform vec3 viewPos;
 uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
@@ -49,10 +47,7 @@ uniform sampler2D ssao;
 uniform samplerCube skybox;
 
 float alpha_cutoff = 0.001;
-// function prototypes
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+
 void main()
 {
 	// retrieve data from G-buffer
@@ -66,7 +61,7 @@ void main()
 	bool gRefraction = texture(gNormal, TexCoords).a > 0.5 ? true : false;
 	if(!ssao_on)
 		AmbientOcclusion = 1.0;
-    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 viewDir = normalize(-FragPos);
 
 	if(refraction && gRefraction)
 	{

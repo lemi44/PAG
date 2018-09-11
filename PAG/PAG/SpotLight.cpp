@@ -24,9 +24,9 @@ SpotLight::SpotLight(const glm::vec3 ambient, const glm::vec3 diffuse, const glm
 
 void SpotLight::draw(Shader* shader, const ViewProjection wvp, const Transform model, const bool gui)
 {
-	const auto tmp_pos = model.getMatrix() * glm::vec4(local_position, 1.0f);
+	const auto tmp_pos = wvp.view * model.getMatrix() * glm::vec4(local_position, 1.0f);
 	real_position = glm::vec3(tmp_pos);
-	const auto tmp_dir = model.getMatrix() * glm::vec4(local_direction, 0.0f);
+	const auto tmp_dir = wvp.view * model.getMatrix() * glm::vec4(local_direction, 0.0f);
 	real_direction = glm::normalize(glm::vec3(tmp_dir));
 	if (gui)
 		drawColor(shader, wvp);
@@ -36,7 +36,8 @@ void SpotLight::draw(Shader* shader, const ViewProjection wvp, const Transform m
 
 void SpotLight::drawColor(Shader * shader, const ViewProjection wvp)
 {
-	shader->setMat4("model", Transform::origin().translate(real_position).getMatrix());
+	const auto world_pos = glm::inverse(wvp.view) * glm::vec4(real_position, 1.0f);
+	shader->setMat4("model", Transform::origin().translate(world_pos).getMatrix());
 	shader->setMat4("view", wvp.view);
 	shader->setMat4("projection", wvp.projection);
 	meshes_[0].drawColor(shader, id);

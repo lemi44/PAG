@@ -325,8 +325,8 @@ void Core::update(GLFWwindow* window)
 
 	}
 	storage_.nodes.getNode(3)->setTransform(storage_.nodes.getNode(3)->getTransform().rotate(glm::vec3(gameTime_, 0.0f, 0.0f)));
-	storage_.particle_node->setTransform(storage_.particle_node->getTransform().translate(glm::vec3(glm::sin(glfwGetTime())*0.1f, 0.0f, 0.0f)));
-	particles_->Update(gameTime_, *storage_.particle_node, 2, cam_.getCameraPos(), glm::vec3(0.1f, 0.1f, 0.1f));
+	//storage_.particle_node->setTransform(storage_.particle_node->getTransform().translate(glm::vec3(glm::sin(glfwGetTime())*0.1f, 0.0f, 0.0f)));
+	particles_->Update(gameTime_, *storage_.particle_node, 1, cam_.getCameraPos(), glm::vec3(0.1f, 0.1f, 0.1f));
 	//lights_.getLight(1)->diffuse = glm::vec3(glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 0.8f, 0.8f);
 	//lights_.getLight(1)->specular = glm::vec3(1.0f, glm::clamp(glm::sin(float(glfwGetTime())), 0.0f, 1.0f), 1.0f);
 	//nodes_.getNode(1)->setTransform(nodes_.getNode(1)->getTransform().rotate(glm::vec3(0.0f, 0.0f, gameTime_)));
@@ -379,6 +379,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 		shader->setBool("ssao_on", storage_.options.ssao);
 		shader->setFloat("refractiveIndex", storage_.options.refractive_index);
 		shader->setVec3("viewPos", cam_.getCameraPos());
+		root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, false, true);
 		FullscreenQuad::renderQuad();
 		glCheckError();
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, deferred_.getGBuffer());
@@ -392,7 +393,7 @@ void Core::render(float tpf, GLFWwindow* window, Shader* shader)
 		glCheckError();
 		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_.getFramebuffer());
 		glCheckError();
-		root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, showGui_, true);
+		if (showGui_)root_.render(wvp_, Transform::origin(), wvp_changed, drawColor_, true, true);
 		storage_.skybox.drawSkybox(cam_.getSkyboxMatrix(window));
 		particles_->Draw(wvp_, cam_.getUp(), cam_.getRight());
 		postprocess_.render(exposure_);

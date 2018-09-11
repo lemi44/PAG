@@ -82,20 +82,23 @@ void GraphNode::renderDrawable(Drawable * drawable, const ViewProjection wvp, co
 }
 void GraphNode::renderLight(Drawable * drawable, const ViewProjection wvp, const Transform model_mat, Shader* sha, Shader* line_shader, const bool picking_color, const bool gui) const
 {
-
-	if (picking_color)
+	if (drawable->isLight())
 	{
-		line_shader->use();
-		drawable->drawColor(line_shader, wvp);
-		sha->use();
-	}
-	else
-	{
-		if (gui && drawable->isLight())
+		if (picking_color)
 		{
 			line_shader->use();
-			drawable->draw(line_shader, wvp, model_mat, gui);
+			drawable->drawColor(line_shader, wvp);
 			sha->use();
+		}
+		else
+		{
+			if (gui)
+			{
+				line_shader->use();
+				drawable->draw(line_shader, wvp, model_mat, gui);
+				sha->use();
+			}
+			else drawable->draw(sha, wvp, model_mat, gui);
 		}
 	}
 }
